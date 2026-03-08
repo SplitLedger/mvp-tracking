@@ -173,7 +173,7 @@ export const ImportDialog: FC<ImportDialogProps> = ({ mvpsList, onImport, onOpen
                     <Fragment>
                         <Flex direction="column" gap="2">
                             <Flex justify="between" align="center">
-                                <Text size="2" weight="bold">
+                                <Text size="2">
                                     {selectedIds.size} of {parsedTimers.length} selected
                                 </Text>
                                 <Button size="1" variant="ghost" onClick={toggleAll}>
@@ -181,8 +181,8 @@ export const ImportDialog: FC<ImportDialogProps> = ({ mvpsList, onImport, onOpen
                                 </Button>
                             </Flex>
 
-                            <ScrollArea type="always" scrollbars="vertical" style={{ height: '65dvh' }}>
-                                <Flex direction="column" gap="4">
+                            <ScrollArea type="auto" scrollbars="vertical" style={{ maxHeight: '65dvh' }}>
+                                <Flex direction="column" gap="2">
                                     {parsedTimers.map((timer) => {
                                         return (
                                             <Card
@@ -192,8 +192,8 @@ export const ImportDialog: FC<ImportDialogProps> = ({ mvpsList, onImport, onOpen
                                                 <Flex align="center" gap="4">
                                                     <Checkbox checked={selectedIds.has(timer.id)} />
                                                     <Flex direction="column">
-                                                        <Text weight="bold">{timer.mvp.name}</Text>
-                                                        <Text size="2">
+                                                        <Text>{timer.mvp.name}</Text>
+                                                        <Text size="1">
                                                             from <Strong>{timer.mvp.map}</Strong>, died at{' '}
                                                             <Strong>
                                                                 {timer.timeOfDeath.toFormat(defaultDateTimeFormat)}
