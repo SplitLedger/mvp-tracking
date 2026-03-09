@@ -375,13 +375,7 @@ const TrackingContainer = (): ReactElement => {
                                     <MvpSpriteContainer>
                                         <MvpSprite src={`./mvps/${spriteToUse}`} alt={`${name} sprite`} />
                                     </MvpSpriteContainer>
-                                    <MvpInformation
-                                        map={map}
-                                        mobId={mobId}
-                                        name={name}
-                                        protocol={mvp.protocol}
-                                        spawnTime={spawnTime}
-                                    />
+                                    <MvpInformation map={map} mobId={mobId} name={name} spawnTime={spawnTime} />
                                 </MvpInformationContainer>
                             </TrackerGridCell>
                             <TrackerGridCell>
