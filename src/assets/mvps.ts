@@ -59,7 +59,7 @@ export default [
         spawnTime: { minMinutes: 45, maxMinutes: 82 },
         sprite: '5481.gif',
         timeOfDeath: null,
-        protocol: RagnarokMvpProtocol.boss,
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 8,

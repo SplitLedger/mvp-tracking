@@ -296,7 +296,7 @@ const TrackingContainer = (): ReactElement => {
                                 disabled={!trackedMvps.length}
                                 onClick={!trackedMvps.length ? undefined : shareTimers}
                             >
-                                <ExitIcon /> Share timers
+                                <ExitIcon /> Copy timers
                             </DropdownMenu.Item>
                             <DropdownMenu.Item onClick={() => setImportDialog(true)}>
                                 <EnterIcon /> Import timers
