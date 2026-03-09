@@ -8,19 +8,19 @@ export const TimerContainer = styled.div<{
     ${(props) => {
         if (props.$variationFinished) {
             return css`
-                color: var(--color-variation-ended);
+                color: var(--gray-10);
             `
         }
 
         if (props.$variationProgress) {
             return css`
-                color: var(--color-variation-progress);
+                color: var(--red-10);
             `
         }
 
         if (props.$variationStart) {
             return css`
-                color: var(--color-variation-start);
+                color: var(--amber-9);
             `
         }
     }}

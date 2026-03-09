@@ -6,7 +6,7 @@ export const TrackingContainerStyled = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
-    background-color: var(--color-primary);
+    background-color: var(--gray-1);
 `
 
 export const Header = styled.header`
@@ -18,7 +18,7 @@ export const Header = styled.header`
     justify-content: center;
     gap: 1rem;
     color: white;
-    background-color: var(--color-primary);
+    background-color: var(--gray-1);
 
     @media (min-width: 770px) {
         grid-template-columns: 3fr 1fr 10px;
@@ -56,14 +56,14 @@ export const TrackerGridContainer = styled.div`
     }
 
     > div:nth-child(even) {
-        background-color: var(--color-even-row);
+        background-color: var(--gray-2);
     }
 `
 
 export const TrackerGridRow = styled.div<{ $isHeader?: boolean }>`
     display: grid;
     grid-template-columns: 1fr;
-    background-color: var(--color-odd-row);
+    background-color: var(--gray-4);
 
     > :first-child {
         padding-top: 1rem;
@@ -93,7 +93,7 @@ export const TrackerGridRow = styled.div<{ $isHeader?: boolean }>`
             top: 0;
             display: none;
             font-weight: bold;
-            border-bottom: 1px solid var(--color-even-row);
+            border-bottom: 1px solid var(--gray-2);
             z-index: 2;
 
             @media (min-width: 770px) {

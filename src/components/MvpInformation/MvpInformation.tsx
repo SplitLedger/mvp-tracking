@@ -37,7 +37,7 @@ export const MvpInformation = memo<MvpInformationProps>(({ map, mobId, name, spa
         <Flex direction="column">
             <Flex>
                 <Tooltip content={`Click to copy @mi ${mobId} and paste in-game chat`}>
-                    <Button onClick={copyMobIdFactory(mobId)} variant="ghost">
+                    <Button onClick={copyMobIdFactory(mobId)} size="3" variant="ghost">
                         {name}
                     </Button>
                 </Tooltip>

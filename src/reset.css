@@ -1,18 +1,8 @@
-:root{
-  --color-primary: #000000;
-  --color-even-row: #1B1B1B;
-  --color-odd-row: #2F2F2F;
-  --color-variation-start: #F8E961;
-  --color-variation-progress: #EC5E6D;
-  --color-variation-ended: #949494;
-}
-
 /* Box sizing rules */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
-  outline-color: #0077b6;
 }
 
 /* Prevent font size inflation */
@@ -39,9 +29,7 @@ ol[role='list'] {
 body {
   margin: 0;
   min-height: 100vh;
-  color: var(--color-primary);
   font-family: 'Open Sans Variable', sans-serif;
-  line-height: 1.5;
 }
 
 /* Set shorter line heights on headings and interactive elements */

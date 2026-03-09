@@ -4,8 +4,10 @@ import { Button, Card, Checkbox, Dialog, Flex, ScrollArea, Strong, Text, TextAre
 import { EnterIcon } from '@radix-ui/react-icons'
 import { toast } from 'sonner'
 
+import mvpsFromStatic from '@/assets/mvps'
 import type { RagnarokMvp } from '@/containers/TrackingContainer/types'
-import { defaultDateTimeFormat } from '@/constants.ts'
+import { defaultDateTimeFormat } from '@/constants'
+import { MvpSprite, MvpSpriteContainer } from '@/containers/TrackingContainer/styles.ts'
 
 interface ParsedTimer {
     id: number
@@ -25,37 +27,44 @@ interface ImportDialogProps {
 
 const parseSharedTimers = (raw: string): ParsedTimer[] | null => {
     const entries = raw.trim().split(';').filter(Boolean)
-    if (!entries.length) return null
+    if (!entries.length) {
+        return null
+    }
 
     const parsed = entries.map((entry) => {
         const separatorIndex = entry.indexOf('|')
-        if (separatorIndex === -1) return null
+        if (separatorIndex === -1) {
+            return null
+        }
 
         const id = Number(entry.substring(0, separatorIndex))
         const timeOfDeath = DateTime.fromISO(entry.substring(separatorIndex + 1))
 
-        if (Number.isNaN(id) || !timeOfDeath.isValid) return null
+        if (Number.isNaN(id) || !timeOfDeath.isValid) {
+            return null
+        }
+
         return { id, timeOfDeath }
     })
 
     return parsed.includes(null) ? null : (parsed as ParsedTimer[])
 }
 
-export const ImportDialog: FC<ImportDialogProps> = ({ mvpsList, onImport, onOpenChange, open }): ReactElement => {
+export const ImportDialog: FC<ImportDialogProps> = ({ onImport, onOpenChange, open }): ReactElement => {
     const [rawInput, setRawInput] = useState('')
     const [parsedTimers, setParsedTimers] = useState<ResolvedTimer[]>([])
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
 
     const mvpsById = useMemo(() => {
-        return new Map(mvpsList.map((mvp) => [mvp.id, mvp]))
-    }, [mvpsList])
+        return new Map(mvpsFromStatic.map((mvp) => [mvp.id, mvp]))
+    }, [])
 
     const handleParse = useCallback(() => {
         const parsed = parseSharedTimers(rawInput)
 
         if (!parsed || parsed.length === 0) {
             toast.error('Invalid format', {
-                description: 'Make sure you pasted the shared timers correctly.',
+                description: 'Make sure you pasted the shared timers correctly',
             })
             return
         }
@@ -77,32 +86,40 @@ export const ImportDialog: FC<ImportDialogProps> = ({ mvpsList, onImport, onOpen
         }
 
         if (!resolved.length) {
-            toast.error('No matching MVPs found for the provided IDs.')
+            toast.error('No matching MVPs found for the provided IDs')
             return
         }
 
         setParsedTimers(resolved)
-        setSelectedIds(new Set(resolved.map((r) => r.id)))
+        setSelectedIds(new Set(resolved.map((resolvedTimer) => resolvedTimer.id)))
     }, [rawInput, mvpsById])
 
     const toggleSelection = useCallback((id: number) => {
-        setSelectedIds((prev) => {
-            const next = new Set(prev)
-            if (next.has(id)) {
-                next.delete(id)
+        setSelectedIds((currentSelectedIds) => {
+            const setSelectedIds = new Set(currentSelectedIds)
+            if (setSelectedIds.has(id)) {
+                setSelectedIds.delete(id)
             } else {
-                next.add(id)
+                setSelectedIds.add(id)
             }
-            return next
+            return setSelectedIds
         })
     }, [])
 
     const toggleAll = useCallback(() => {
-        setSelectedIds((prev) => {
-            if (prev.size === parsedTimers.length) return new Set()
-            return new Set(parsedTimers.map((t) => t.id))
+        setSelectedIds((currentSelectIds) => {
+            if (currentSelectIds.size === parsedTimers.length) {
+                return new Set()
+            }
+            return new Set(parsedTimers.map((resolvedTimer) => resolvedTimer.id))
         })
     }, [parsedTimers])
+
+    const resetImporter = useCallback(() => {
+        setRawInput('')
+        setParsedTimers([])
+        setSelectedIds(new Set())
+    }, [])
 
     const handleImport = useCallback(() => {
         const toImport = parsedTimers
@@ -116,16 +133,14 @@ export const ImportDialog: FC<ImportDialogProps> = ({ mvpsList, onImport, onOpen
 
         onImport(toImport)
         toast.success(`Imported ${toImport.length} MVP timers`)
+        resetImporter()
         onOpenChange(false)
     }, [parsedTimers, selectedIds, onImport, onOpenChange])
 
     const handleOpenChange = useCallback(
         (isOpen: boolean) => {
             if (!isOpen) {
-                // reset state when closing
-                setRawInput('')
-                setParsedTimers([])
-                setSelectedIds(new Set())
+                resetImporter()
             }
             onOpenChange(isOpen)
         },
@@ -150,7 +165,7 @@ export const ImportDialog: FC<ImportDialogProps> = ({ mvpsList, onImport, onOpen
                     <Fragment>
                         <TextArea
                             value={rawInput}
-                            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setRawInput(e.target.value)}
+                            onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setRawInput(event.target.value)}
                             resize="none"
                             placeholder="Paste shared timers here, e.g. 4|2026-03-08T17:40:34.047+00:00;3|..."
                             rows={4}
@@ -183,27 +198,41 @@ export const ImportDialog: FC<ImportDialogProps> = ({ mvpsList, onImport, onOpen
 
                             <ScrollArea type="auto" scrollbars="vertical" style={{ maxHeight: '65dvh' }}>
                                 <Flex direction="column" gap="2">
-                                    {parsedTimers.map((timer) => {
-                                        return (
-                                            <Card
-                                                key={`import-timers-${timer.id}`}
-                                                onClick={() => toggleSelection(timer.id)}
-                                            >
-                                                <Flex align="center" gap="4">
-                                                    <Checkbox checked={selectedIds.has(timer.id)} />
-                                                    <Flex direction="column">
-                                                        <Text>{timer.mvp.name}</Text>
-                                                        <Text size="1">
-                                                            from <Strong>{timer.mvp.map}</Strong>, died at{' '}
-                                                            <Strong>
-                                                                {timer.timeOfDeath.toFormat(defaultDateTimeFormat)}
-                                                            </Strong>
-                                                        </Text>
-                                                    </Flex>
-                                                </Flex>
-                                            </Card>
+                                    {parsedTimers
+                                        .sort((a, b) =>
+                                            a.mvp.name.localeCompare(b.mvp.name, undefined, { sensitivity: 'base' })
                                         )
-                                    })}
+                                        .map((timer) => {
+                                            const spriteToUse = timer.mvp.sprite ?? 'fallback.png'
+
+                                            return (
+                                                <Card
+                                                    key={`import-timers-${timer.id}`}
+                                                    onClick={() => toggleSelection(timer.id)}
+                                                >
+                                                    <Flex align="center" gap="4">
+                                                        <Checkbox checked={selectedIds.has(timer.id)} />
+
+                                                        <MvpSpriteContainer style={{ width: '32px' }}>
+                                                            <MvpSprite
+                                                                alt={`${timer.mvp.name} sprite`}
+                                                                src={`./mvps/${spriteToUse}`}
+                                                            />
+                                                        </MvpSpriteContainer>
+
+                                                        <Flex direction="column">
+                                                            <Text>{timer.mvp.name}</Text>
+                                                            <Text size="1">
+                                                                from <Strong>{timer.mvp.map}</Strong>, died at{' '}
+                                                                <Strong>
+                                                                    {timer.timeOfDeath.toFormat(defaultDateTimeFormat)}
+                                                                </Strong>
+                                                            </Text>
+                                                        </Flex>
+                                                    </Flex>
+                                                </Card>
+                                            )
+                                        })}
                                 </Flex>
                             </ScrollArea>
                         </Flex>
