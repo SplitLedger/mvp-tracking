@@ -43,7 +43,13 @@ import {
     TrackingContainerStyled,
     UpdateContainer,
 } from './styles'
-import { type DispatcherStateModifier, type RagnarokMvp, type TrackingChange, TrackingChangeAction } from './types'
+import {
+    type DispatcherStateModifier,
+    type RagnarokMvp,
+    RagnarokMvpProtocol,
+    type TrackingChange,
+    TrackingChangeAction,
+} from './types'
 
 const reducer = (currentState: RagnarokMvp[], beingModified: DispatcherStateModifier) => {
     if (beingModified.fullReset) {
@@ -176,6 +182,7 @@ const TrackingContainer = (): ReactElement => {
                 map: '',
                 mobId: '',
                 name: '',
+                protocol: RagnarokMvpProtocol.normal,
                 spawnTime: {
                     minMinutes: 0,
                     maxMinutes: 0,
@@ -327,7 +334,9 @@ const TrackingContainer = (): ReactElement => {
                     </Flex>
                 </Flex>
                 <HeaderDisplayDates>
-                    <Text size="1">Server time: {serverTime.toFormat('HH:mm')}</Text>
+                    <Tooltip content="This timers do not update. If they are completely off, just refresh the page">
+                        <Text size="1">Server time: {serverTime.toFormat('HH:mm')}</Text>
+                    </Tooltip>
                     <Text size="1">Your time: {localTime.toFormat('HH:mm')} </Text>
                 </HeaderDisplayDates>
             </Header>
@@ -366,7 +375,13 @@ const TrackingContainer = (): ReactElement => {
                                     <MvpSpriteContainer>
                                         <MvpSprite src={`./mvps/${spriteToUse}`} alt={`${name} sprite`} />
                                     </MvpSpriteContainer>
-                                    <MvpInformation map={map} mobId={mobId} name={name} spawnTime={spawnTime} />
+                                    <MvpInformation
+                                        map={map}
+                                        mobId={mobId}
+                                        name={name}
+                                        protocol={mvp.protocol}
+                                        spawnTime={spawnTime}
+                                    />
                                 </MvpInformationContainer>
                             </TrackerGridCell>
                             <TrackerGridCell>

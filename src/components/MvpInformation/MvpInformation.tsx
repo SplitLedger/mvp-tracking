@@ -1,12 +1,13 @@
 import { memo, type ReactElement, useCallback } from 'react'
 import { Button, Flex, Text, Tooltip } from '@radix-ui/themes'
 // app
-import type { RagnarokMvp } from '@/containers/TrackingContainer/types'
+import { type RagnarokMvp, RagnarokMvpProtocol } from '@/containers/TrackingContainer/types'
 
 interface MvpInformationProps {
     map: string
     mobId: string
     name: string
+    protocol: RagnarokMvpProtocol
     spawnTime: RagnarokMvp['spawnTime']
 }
 
@@ -19,7 +20,7 @@ function minutesToHoursMinutes(totalMinutes: number): string {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
 }
 
-export const MvpInformation = memo<MvpInformationProps>(({ map, mobId, name, spawnTime }): ReactElement => {
+export const MvpInformation = memo<MvpInformationProps>(({ map, mobId, name, protocol, spawnTime }): ReactElement => {
     const minTime = minutesToHoursMinutes(spawnTime.minMinutes)
     const maxTime = minutesToHoursMinutes(spawnTime.maxMinutes)
 
@@ -38,6 +39,9 @@ export const MvpInformation = memo<MvpInformationProps>(({ map, mobId, name, spa
             <Flex>
                 <Tooltip content={`Click to copy @mi ${mobId} and paste in-game chat`}>
                     <Button onClick={copyMobIdFactory(mobId)} size="3" variant="ghost">
+                        {protocol !== RagnarokMvpProtocol.normal && (
+                            <img src={`./mvps/${protocol}.png`} alt={`${protocol} protocol`} />
+                        )}
                         {name}
                     </Button>
                 </Tooltip>

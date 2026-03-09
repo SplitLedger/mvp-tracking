@@ -1,5 +1,11 @@
 import { DateTime } from 'luxon'
 
+export enum RagnarokMvpProtocol {
+    normal = 'normal',
+    miniBoss = 'mini-boss',
+    boss = 'boss',
+}
+
 export interface RagnarokMvp {
     id: number
     map: string
@@ -8,6 +14,7 @@ export interface RagnarokMvp {
     spawnTime: { minMinutes: number; maxMinutes: number }
     sprite?: string
     timeOfDeath: DateTime | null
+    protocol: RagnarokMvpProtocol
 }
 
 export type DispatcherStateModifier = {

@@ -1,4 +1,4 @@
-import type { RagnarokMvp } from '@/containers/TrackingContainer/types.ts'
+import { type RagnarokMvp, RagnarokMvpProtocol } from '@/containers/TrackingContainer/types'
 
 export default [
     {
@@ -9,6 +9,7 @@ export default [
         spawnTime: { minMinutes: 60, maxMinutes: 70 },
         sprite: '1511.png',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 2,
@@ -18,6 +19,7 @@ export default [
         spawnTime: { minMinutes: 60, maxMinutes: 90 },
         sprite: '1096.png',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 3,
@@ -27,6 +29,7 @@ export default [
         spawnTime: { minMinutes: 60, maxMinutes: 90 },
         sprite: '1096.png',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 4,
@@ -36,6 +39,7 @@ export default [
         spawnTime: { minMinutes: 60, maxMinutes: 90 },
         sprite: '1096.png',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 5,
@@ -45,6 +49,7 @@ export default [
         spawnTime: { minMinutes: 60, maxMinutes: 63 },
         sprite: '1388.png',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 102,
@@ -54,6 +59,7 @@ export default [
         spawnTime: { minMinutes: 45, maxMinutes: 82 },
         sprite: '5481.gif',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 8,
@@ -64,6 +70,7 @@ export default [
         sprite: '1785.png',
         mobId: '1785',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 7,
@@ -74,6 +81,7 @@ export default [
         sprite: '1785.png',
         mobId: '1785',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 10,
@@ -83,6 +91,7 @@ export default [
         sprite: '1785.png',
         mobId: '1785',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 6,
@@ -92,6 +101,7 @@ export default [
         sprite: '1785.png',
         mobId: '1785',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 9,
@@ -101,6 +111,7 @@ export default [
         sprite: '1785.png',
         mobId: '1785',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 11,
@@ -110,6 +121,7 @@ export default [
         sprite: '1518.png',
         mobId: '1518',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 12,
@@ -119,6 +131,7 @@ export default [
         sprite: '1039.png',
         mobId: '1039',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 13,
@@ -128,15 +141,27 @@ export default [
         sprite: '1874.png',
         mobId: '1874',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 14,
         name: 'Bio3 MVP',
         map: 'lhz_dun03',
         spawnTime: { minMinutes: 100, maxMinutes: 130 },
-        sprite: '5481.gif',
+        sprite: '1641.png',
         mobId: '1648',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.boss,
+    },
+    {
+        id: 67,
+        name: 'Bio4 MVP',
+        map: 'lhz_dun04',
+        spawnTime: { minMinutes: 100, maxMinutes: 130 },
+        sprite: '2235.png',
+        mobId: '2235',
+        timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 83,
@@ -146,6 +171,7 @@ export default [
         sprite: '1268.png',
         mobId: '1268',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 15,
@@ -155,6 +181,7 @@ export default [
         sprite: '2068.png',
         mobId: '2068',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 101,
@@ -164,6 +191,7 @@ export default [
         sprite: '2475.png',
         timeOfDeath: null,
         mobId: '2475',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 16,
@@ -173,6 +201,7 @@ export default [
         sprite: '1272.png',
         mobId: '1272',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 17,
@@ -182,6 +211,7 @@ export default [
         sprite: '1272.png',
         mobId: '1272',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 18,
@@ -191,6 +221,7 @@ export default [
         sprite: '1719.png',
         mobId: '1719',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 70,
@@ -200,6 +231,7 @@ export default [
         sprite: '1582.png',
         mobId: '1582',
         timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 19,
@@ -209,15 +241,7 @@ export default [
         sprite: '1582.png',
         mobId: '1582',
         timeOfDeath: null,
-    },
-    {
-        id: 20,
-        name: 'Deviling',
-        map: 'yuno_fild03',
-        spawnTime: { minMinutes: 60, maxMinutes: 90 },
-        sprite: '1582.png',
-        mobId: '1582',
-        timeOfDeath: null,
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 21,
@@ -227,6 +251,7 @@ export default [
         sprite: '1046.png',
         timeOfDeath: null,
         mobId: '1046',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 22,
@@ -236,6 +261,7 @@ export default [
         sprite: '1046.png',
         timeOfDeath: null,
         mobId: '1046',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 23,
@@ -245,6 +271,7 @@ export default [
         sprite: '1389.png',
         timeOfDeath: null,
         mobId: '1389',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 24,
@@ -254,6 +281,7 @@ export default [
         sprite: '1112.png',
         timeOfDeath: null,
         mobId: '1112',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 96,
@@ -263,6 +291,7 @@ export default [
         sprite: '2018.png',
         timeOfDeath: null,
         mobId: '2018',
+        protocol: RagnarokMvpProtocol.normal,
     },
     {
         id: 966,
@@ -272,6 +301,7 @@ export default [
         sprite: '2018.png',
         timeOfDeath: null,
         mobId: '2018',
+        protocol: RagnarokMvpProtocol.normal,
     },
     {
         id: 25,
@@ -281,6 +311,7 @@ export default [
         sprite: '1115.png',
         timeOfDeath: null,
         mobId: '1115',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 26,
@@ -290,6 +321,7 @@ export default [
         sprite: '1115.png',
         timeOfDeath: null,
         mobId: '1115',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 27,
@@ -299,6 +331,7 @@ export default [
         sprite: '1658.png',
         timeOfDeath: null,
         mobId: '1658',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 28,
@@ -308,6 +341,7 @@ export default [
         sprite: '1418.png',
         timeOfDeath: null,
         mobId: '1418',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 29,
@@ -317,15 +351,17 @@ export default [
         sprite: '1871.png',
         timeOfDeath: null,
         mobId: '1871',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 30,
-        name: 'Garm',
+        name: 'Garm/Hatii',
         map: 'xmas_fild01',
         spawnTime: { minMinutes: 120, maxMinutes: 130 },
         sprite: '1252.png',
         timeOfDeath: null,
         mobId: '1252',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 73,
@@ -335,6 +371,7 @@ export default [
         sprite: '1120.png',
         timeOfDeath: null,
         mobId: '1120',
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 72,
@@ -344,6 +381,7 @@ export default [
         sprite: '1120.png',
         timeOfDeath: null,
         mobId: '1120',
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 31,
@@ -353,6 +391,7 @@ export default [
         sprite: '1120.png',
         timeOfDeath: null,
         mobId: '1120',
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 32,
@@ -362,6 +401,7 @@ export default [
         sprite: '1120.png',
         timeOfDeath: null,
         mobId: '1120',
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 34,
@@ -371,6 +411,7 @@ export default [
         sprite: '1768.png',
         timeOfDeath: null,
         mobId: '1768',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 33,
@@ -380,6 +421,7 @@ export default [
         sprite: '1086.png',
         timeOfDeath: null,
         mobId: '1086',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 97,
@@ -389,15 +431,57 @@ export default [
         sprite: '1885.png',
         timeOfDeath: null,
         mobId: '1885',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 82,
-        name: 'Green Maiden (x5)',
+        name: 'Green Maiden 1',
         map: 'lou_dun03',
         spawnTime: { minMinutes: 50, maxMinutes: 80 },
         sprite: '1631.png',
         timeOfDeath: null,
         mobId: '1631',
+        protocol: RagnarokMvpProtocol.normal,
+    },
+    {
+        id: 822,
+        name: 'Green Maiden 2',
+        map: 'lou_dun03',
+        spawnTime: { minMinutes: 50, maxMinutes: 80 },
+        sprite: '1631.png',
+        timeOfDeath: null,
+        mobId: '1631',
+        protocol: RagnarokMvpProtocol.normal,
+    },
+    {
+        id: 823,
+        name: 'Green Maiden 3',
+        map: 'lou_dun03',
+        spawnTime: { minMinutes: 50, maxMinutes: 80 },
+        sprite: '1631.png',
+        timeOfDeath: null,
+        mobId: '1631',
+        protocol: RagnarokMvpProtocol.normal,
+    },
+    {
+        id: 824,
+        name: 'Green Maiden 4',
+        map: 'lou_dun03',
+        spawnTime: { minMinutes: 50, maxMinutes: 80 },
+        sprite: '1631.png',
+        timeOfDeath: null,
+        mobId: '1631',
+        protocol: RagnarokMvpProtocol.normal,
+    },
+    {
+        id: 825,
+        name: 'Green Maiden 5',
+        map: 'lou_dun03',
+        spawnTime: { minMinutes: 50, maxMinutes: 80 },
+        sprite: '1631.png',
+        timeOfDeath: null,
+        mobId: '1631',
+        protocol: RagnarokMvpProtocol.normal,
     },
     {
         id: 35,
@@ -407,6 +491,7 @@ export default [
         sprite: '1990.png',
         timeOfDeath: null,
         mobId: '1990',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 36,
@@ -416,6 +501,7 @@ export default [
         sprite: '1832.png',
         timeOfDeath: null,
         mobId: '1832',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 37,
@@ -425,6 +511,7 @@ export default [
         sprite: '1492.png',
         timeOfDeath: null,
         mobId: '1492',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 38,
@@ -434,6 +521,7 @@ export default [
         sprite: '1734.png',
         timeOfDeath: null,
         modId: '1734',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 98,
@@ -443,6 +531,7 @@ export default [
         sprite: '2202.png',
         timeOfDeath: null,
         mobId: '2202',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 39,
@@ -452,6 +541,7 @@ export default [
         sprite: '1779.png',
         timeOfDeath: null,
         mobId: '1779',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 40,
@@ -461,6 +551,7 @@ export default [
         sprite: '1688.png',
         timeOfDeath: null,
         mobId: '1688',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 41,
@@ -470,6 +561,7 @@ export default [
         sprite: '21579.png',
         timeOfDeath: null,
         mobId: '1373',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 43,
@@ -479,6 +571,7 @@ export default [
         sprite: '1147.png',
         timeOfDeath: null,
         mobId: '1147',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 42,
@@ -488,6 +581,7 @@ export default [
         sprite: '1147.png',
         timeOfDeath: null,
         mobId: '1147',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 44,
@@ -497,6 +591,7 @@ export default [
         sprite: '1289.png',
         timeOfDeath: null,
         mobId: '1289',
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 45,
@@ -506,6 +601,7 @@ export default [
         sprite: '1289.png',
         timeOfDeath: null,
         mobId: '1289',
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 91,
@@ -515,6 +611,7 @@ export default [
         sprite: '1289.png',
         timeOfDeath: null,
         mobId: '1289',
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 92,
@@ -524,6 +621,7 @@ export default [
         sprite: '1289.png',
         timeOfDeath: null,
         mobId: '1289',
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 93,
@@ -533,6 +631,7 @@ export default [
         sprite: '1289.png',
         timeOfDeath: null,
         mobId: '1289',
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 46,
@@ -542,6 +641,7 @@ export default [
         sprite: '1059.png',
         timeOfDeath: null,
         mobId: '1059',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 47,
@@ -551,6 +651,7 @@ export default [
         sprite: '1150.png',
         timeOfDeath: null,
         mobId: '1150',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 86,
@@ -560,6 +661,47 @@ export default [
         sprite: '1262.png',
         timeOfDeath: null,
         mobId: '1262',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 12622,
+        name: 'Mutant Dragonoid 1',
+        map: 'hu_fild05',
+        spawnTime: { minMinutes: 400, maxMinutes: 430 },
+        sprite: '1262.png',
+        timeOfDeath: null,
+        mobId: '1262',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 12623,
+        name: 'Mutant Dragonoid 2',
+        map: 'hu_fild05',
+        spawnTime: { minMinutes: 400, maxMinutes: 430 },
+        sprite: '1262.png',
+        timeOfDeath: null,
+        mobId: '1262',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 12624,
+        name: 'Mutant Dragonoid 3',
+        map: 'hu_fild05',
+        spawnTime: { minMinutes: 400, maxMinutes: 430 },
+        sprite: '1262.png',
+        timeOfDeath: null,
+        mobId: '1262',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 12625,
+        name: 'Mutant Dragonoid 4',
+        map: 'hu_fild05',
+        spawnTime: { minMinutes: 400, maxMinutes: 430 },
+        sprite: '1262.png',
+        timeOfDeath: null,
+        mobId: '1262',
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 49,
@@ -569,6 +711,7 @@ export default [
         sprite: '1087.png',
         timeOfDeath: null,
         mobId: '1087',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 48,
@@ -578,6 +721,7 @@ export default [
         sprite: '1087.png',
         timeOfDeath: null,
         mobId: '1087',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 50,
@@ -587,6 +731,7 @@ export default [
         sprite: '1190.png',
         timeOfDeath: null,
         mobId: '1190',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 51,
@@ -596,6 +741,7 @@ export default [
         sprite: '1038.png',
         timeOfDeath: null,
         mobId: '1038',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 52,
@@ -605,6 +751,7 @@ export default [
         sprite: '1157.png',
         timeOfDeath: null,
         mobId: '1157',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 53,
@@ -614,6 +761,7 @@ export default [
         sprite: '1159.png',
         timeOfDeath: null,
         mobId: '1159',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 54,
@@ -623,6 +771,7 @@ export default [
         sprite: '1623.png',
         timeOfDeath: null,
         mobId: '1623',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 55,
@@ -632,6 +781,7 @@ export default [
         sprite: '1251.png',
         timeOfDeath: null,
         mobId: '1251',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 56,
@@ -641,6 +791,7 @@ export default [
         sprite: '3430.png',
         timeOfDeath: null,
         mobId: '1583',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 57,
@@ -650,6 +801,7 @@ export default [
         sprite: '1991.png',
         timeOfDeath: null,
         mobId: '1991',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 58,
@@ -659,6 +811,7 @@ export default [
         sprite: '1708.png',
         timeOfDeath: null,
         mobId: '1708',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 100,
@@ -668,6 +821,7 @@ export default [
         sprite: '1089.png',
         timeOfDeath: null,
         mobId: '1089',
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 99,
@@ -677,6 +831,7 @@ export default [
         sprite: '1089.png',
         timeOfDeath: null,
         mobId: '1089',
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 59,
@@ -686,6 +841,7 @@ export default [
         sprite: '1312.png',
         timeOfDeath: null,
         mobId: '1312',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 60,
@@ -695,6 +851,7 @@ export default [
         sprite: '2037.png',
         timeOfDeath: null,
         mobId: '1765',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 61,
@@ -704,6 +861,7 @@ export default [
         sprite: '2037.png',
         timeOfDeath: null,
         mobId: '1765',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 62,
@@ -713,6 +871,7 @@ export default [
         sprite: '2037.png',
         timeOfDeath: null,
         mobId: '1765',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 63,
@@ -722,6 +881,7 @@ export default [
         sprite: '1751.png',
         timeOfDeath: null,
         mobId: '1751',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 64,
@@ -731,6 +891,7 @@ export default [
         sprite: '1685.png',
         timeOfDeath: null,
         mobId: '1685',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 65,
@@ -740,6 +901,7 @@ export default [
         sprite: '1917.png',
         timeOfDeath: null,
         mobId: '1917',
+        protocol: RagnarokMvpProtocol.boss,
     },
     {
         id: 12591,
@@ -748,6 +910,7 @@ export default [
         spawnTime: { minMinutes: 60, maxMinutes: 60 },
         sprite: '1259.png',
         mobId: '1259',
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 12592,
@@ -756,6 +919,7 @@ export default [
         spawnTime: { minMinutes: 60, maxMinutes: 60 },
         sprite: '1259.png',
         mobId: '1259',
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 12593,
@@ -764,6 +928,7 @@ export default [
         spawnTime: { minMinutes: 60, maxMinutes: 60 },
         sprite: '1259.png',
         mobId: '1259',
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 12594,
@@ -772,6 +937,7 @@ export default [
         spawnTime: { minMinutes: 60, maxMinutes: 90 },
         sprite: '1259.png',
         mobId: '1259',
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
     {
         id: 12595,
@@ -780,5 +946,168 @@ export default [
         spawnTime: { minMinutes: 58, maxMinutes: 90 },
         sprite: '1259.png',
         mobId: '1259',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 1092,
+        name: 'Vagabond Wolf',
+        map: 'moc_fild03',
+        spawnTime: { minMinutes: 30, maxMinutes: 50 },
+        sprite: '1092.png',
+        mobId: '1092',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 10921,
+        name: 'Vagabond Wolf',
+        map: 'prt_maze01',
+        spawnTime: { minMinutes: 60, maxMinutes: 90 },
+        sprite: '1092.png',
+        mobId: '1092',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 10922,
+        name: 'Vagabond Wolf',
+        map: 'prt_maze03',
+        spawnTime: { minMinutes: 32, maxMinutes: 35 },
+        sprite: '1092.png',
+        mobId: '1092',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 1088,
+        name: 'Vocal',
+        map: 'prt_fild04',
+        spawnTime: { minMinutes: 30, maxMinutes: 50 },
+        sprite: '1088.png',
+        mobId: '1088',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 10881,
+        name: 'Vocal',
+        map: 'prt_fild07',
+        spawnTime: { minMinutes: 30, maxMinutes: 50 },
+        sprite: '1088.png',
+        mobId: '1088',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 10882,
+        name: 'Vocal',
+        map: 'prt_maze03',
+        spawnTime: { minMinutes: 32, maxMinutes: 57 },
+        sprite: '1088.png',
+        mobId: '1088',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 1090,
+        name: 'Mastering',
+        map: 'pay_fild04',
+        spawnTime: { minMinutes: 60, maxMinutes: 90 },
+        sprite: '1090.png',
+        mobId: '1090',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 10902,
+        name: 'Mastering',
+        map: 'prt_maze03',
+        spawnTime: { minMinutes: 32, maxMinutes: 35 },
+        sprite: '1090.png',
+        mobId: '1090',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 10903,
+        name: 'Mastering',
+        map: 'xmas_dun01',
+        spawnTime: { minMinutes: 30, maxMinutes: 45 },
+        sprite: '1090.png',
+        mobId: '1090',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 10904,
+        name: 'Mastering',
+        map: 'yuno_fild04',
+        spawnTime: { minMinutes: 60, maxMinutes: 90 },
+        sprite: '1090.png',
+        mobId: '1090',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 1093,
+        name: 'Eclipse',
+        map: 'prt_fild02',
+        spawnTime: { minMinutes: 30, maxMinutes: 50 },
+        sprite: '1093.png',
+        mobId: '1093',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 10932,
+        name: 'Eclipse',
+        map: 'ptr_maze03',
+        spawnTime: { minMinutes: 32, maxMinutes: 35 },
+        sprite: '1093.png',
+        mobId: '1093',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 1091,
+        name: 'Dragon Fly',
+        map: 'moc_fild18',
+        spawnTime: { minMinutes: 60, maxMinutes: 90 },
+        sprite: '1091.png',
+        mobId: '1091',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 1307,
+        name: "Cat o' Nine Tails",
+        map: 'pay_dun04',
+        spawnTime: { minMinutes: 60, maxMinutes: 180 },
+        sprite: '1307.png',
+        mobId: '1307',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 1283,
+        name: 'Chimera 1',
+        map: 'gl_cas02',
+        spawnTime: { minMinutes: 60, maxMinutes: 90 },
+        sprite: '1283.png',
+        mobId: '1283',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 12832,
+        name: 'Chimera 2',
+        map: 'gl_cas02',
+        spawnTime: { minMinutes: 30, maxMinutes: 45 },
+        sprite: '1283.png',
+        mobId: '1283',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 12833,
+        name: 'Chimera 3',
+        map: 'gl_cas02',
+        spawnTime: { minMinutes: 30, maxMinutes: 45 },
+        sprite: '1283.png',
+        mobId: '1283',
+        protocol: RagnarokMvpProtocol.miniBoss,
+    },
+    {
+        id: 1200,
+        name: 'Zealotus',
+        map: 'gl_prison1',
+        spawnTime: { minMinutes: 60, maxMinutes: 90 },
+        sprite: '1200.png',
+        mobId: '1200',
+        protocol: RagnarokMvpProtocol.miniBoss,
     },
 ] as RagnarokMvp[]
