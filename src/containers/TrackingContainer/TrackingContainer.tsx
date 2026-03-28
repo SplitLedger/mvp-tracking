@@ -1,17 +1,19 @@
 import { Fragment, type ReactElement, useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { DateTime } from 'luxon'
 import { debounceTime, Subject } from 'rxjs'
-import { Button, DropdownMenu, Flex, IconButton, Text, TextField, Tooltip } from '@radix-ui/themes'
+import { Button, DropdownMenu, Flex, IconButton, Popover, Text, TextField, Tooltip } from '@radix-ui/themes'
 import {
     Cross1Icon,
     EnterIcon,
     ExclamationTriangleIcon,
     ExitIcon,
+    ExternalLinkIcon,
     GlobeIcon,
     HamburgerMenuIcon,
     MagnifyingGlassIcon,
     MoonIcon,
     ResetIcon,
+    StarFilledIcon,
     TargetIcon,
     TimerIcon,
     UpdateIcon,
@@ -300,23 +302,35 @@ const TrackingContainer = (): ReactElement => {
                             <DropdownMenu.Item onClick={() => setImportDialog(true)}>
                                 <EnterIcon /> Import timers
                             </DropdownMenu.Item>
-                            {/*<DropdownMenu.Separator />*/}
-                            {/*<DropdownMenu.Item asChild>*/}
-                            {/*    <a href="https://github.com/recs182/mvp-tracking/issues" target="_blank">*/}
-                            {/*        <ExternalLinkIcon /> Bug or Feature Request*/}
-                            {/*    </a>*/}
-                            {/*</DropdownMenu.Item>*/}
-                            {/*<DropdownMenu.Item color="indigo" asChild>*/}
-                            {/*    <a href="https://github.com/sponsors/recs182" target="_blank">*/}
-                            {/*        <ExternalLinkIcon /> Donate*/}
-                            {/*    </a>*/}
-                            {/*</DropdownMenu.Item>*/}
+                            <DropdownMenu.Separator />
+                            <DropdownMenu.Item asChild>
+                                <a href="https://github.com/recs182/mvp-tracking/issues" target="_blank">
+                                    <ExternalLinkIcon /> Bug or Feature Request
+                                </a>
+                            </DropdownMenu.Item>
                             <DropdownMenu.Separator />
                             <DropdownMenu.Item color="red" onClick={() => setResetDialog(true)}>
                                 <ExclamationTriangleIcon /> Reset tracker
                             </DropdownMenu.Item>
                         </DropdownMenu.Content>
                     </DropdownMenu.Root>
+
+                    <Popover.Root>
+                        <Popover.Trigger>
+                            <Button variant="soft">
+                                <StarFilledIcon /> Donate
+                            </Button>
+                        </Popover.Trigger>
+                        <Popover.Content style={{ backgroundColor: '#f7f7f7' }}>
+                            <iframe
+                                id="kofiframe"
+                                src="https://ko-fi.com/woodlie/?hidefeed=true&widget=true&embed=true&preview=true"
+                                style={{ border: 'none', width: '100%', background: 'transparent' }}
+                                height="712"
+                                title="woodlie"
+                            />
+                        </Popover.Content>
+                    </Popover.Root>
 
                     <Flex direction="column" width="100%">
                         <TextField.Root
