@@ -865,7 +865,7 @@ export default [
     },
     {
         id: 62,
-        name: 'Valkyrie 3',
+        name: 'Valkyrie',
         map: 'odin_tem02',
         spawnTime: { minMinutes: 90, maxMinutes: 90 },
         sprite: '2037.png',
