@@ -44,7 +44,7 @@ export const TimeZoneDialog: FC<TimeZoneDialogProps> = ({ onOpenChange, open }) 
                         <Select.Content>
                             {timezones.map((timezone) => {
                                 return (
-                                    <Select.Item key={timezone.gmt} value={timezone.iana}>
+                                    <Select.Item key={timezone.gmt} value={timezone.utc}>
                                         {timezone.gmt} | {timezone.name}
                                     </Select.Item>
                                 )
