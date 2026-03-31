@@ -122,11 +122,14 @@ export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
     const joinSession = useCallback(
         async (code: string, mvps: RagnarokMvp[]): Promise<void> => {
             cleanup()
+            localStorage.setItem(localStorageRoomCodeKey, code)
+
             mvpsRef.current = mvps
             setSessionState(SessionState.connecting)
-            setRoomCode(code)
 
+            setRoomCode(code)
             subscribeToRoom(code)
+
             setSessionState(SessionState.joined)
         },
         [cleanup, subscribeToRoom]
