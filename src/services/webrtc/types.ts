@@ -11,11 +11,6 @@ export enum SessionState {
     joined = 'joined',
 }
 
-export type DataChannelMessage =
-    | { type: 'FULL_STATE'; payload: TimerState }
-    | { type: 'TIMER_UPDATE'; payload: { id: number; timeOfDeath: string } }
-    | { type: 'REQUEST_STATE' }
-
 export interface UseWebRTCReturn {
     sessionState: SessionState
     roomCode: string | null

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getApps, initializeApp } from 'firebase/app'
-import { getDatabase, onChildAdded, onValue, push, ref, remove, set, type Unsubscribe } from 'firebase/database'
+import { getDatabase, onValue, ref, remove, set, type Unsubscribe } from 'firebase/database'
 import { DateTime } from 'luxon'
 import { Subject } from 'rxjs'
 import { v4 } from 'uuid'
@@ -10,7 +10,7 @@ import { computeMvpDifferenceTimers } from '@/helpers'
 // self
 import { mergeTimers, sanitizeState, type TimerState } from './validation'
 import { localStorageRoomCodeKey } from '@/constants'
-import { type DataChannelMessage, SessionState, type UseWebRTCReturn } from './types'
+import { SessionState, type UseWebRTCReturn } from './types'
 
 const firebaseConfigurations = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -26,13 +26,9 @@ const getFirebaseDb = () => {
 
 const getOrCreateRoomCode = (): string => {
     const existing = localStorage.getItem(localStorageRoomCodeKey)
-    if (existing) {
-        return existing
-    }
-
+    if (existing) return existing
     const newCode = v4()
     localStorage.setItem(localStorageRoomCodeKey, newCode)
-
     return newCode
 }
 
@@ -41,248 +37,116 @@ export const resetRoomCode = (): string => {
     return getOrCreateRoomCode()
 }
 
-const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }]
-
 export const useWebRTC = (): UseWebRTCReturn => {
     const [sessionState, setSessionState] = useState<SessionState>(SessionState.idle)
     const [roomCode, setRoomCode] = useState<string | null>(null)
 
-    // Stable Subject refs — never recreated across renders
     const onFullState$ = useRef(new Subject<TimerState>()).current
     const onTimerUpdate$ = useRef(new Subject<{ id: number; timeOfDeath: string }>()).current
 
-    // WebRTC refs — mutable, not state (changing these should not trigger renders)
-    const peerConnectionReference = useRef<RTCPeerConnection | null>(null)
-    const channelReference = useRef<RTCDataChannel | null>(null)
     const firebaseUnsubscribe = useRef<Unsubscribe[]>([])
+    // Keep a ref to the current mvps so the firebase listener always has fresh data
+    const mvpsRef = useRef<RagnarokMvp[]>([])
 
     const cleanup = useCallback(() => {
         firebaseUnsubscribe.current.forEach((unsub) => unsub())
         firebaseUnsubscribe.current = []
-        channelReference.current?.close()
-        channelReference.current = null
-        peerConnectionReference.current?.close()
-        peerConnectionReference.current = null
         setSessionState(SessionState.idle)
         setRoomCode(null)
+        localStorage.removeItem(localStorageRoomCodeKey)
     }, [])
 
-    const createPeerConnection = useCallback(() => {
-        const peerConnection = new RTCPeerConnection({ iceServers: ICE_SERVERS })
-        peerConnectionReference.current = peerConnection
-        return peerConnection
-    }, [peerConnectionReference])
+    // ── Shared: subscribe to room timer changes ────────────────────────────────
+    const subscribeToRoom = useCallback(
+        (code: string) => {
+            const database = getFirebaseDb()
 
-    const sendMessage = useCallback((message: DataChannelMessage) => {
-        const channel = channelReference.current
-        if (channel?.readyState === 'open') {
-            channel.send(JSON.stringify(message))
-        }
-    }, [])
+            const unsub = onValue(ref(database, `rooms/${code}/timers`), (snap) => {
+                const mvps = mvpsRef.current
+                const incoming: TimerState = snap.val() ?? {}
 
-    const handleIncomingMessage = useCallback(
-        (raw: string, mvps: RagnarokMvp[]) => {
-            const message: DataChannelMessage = JSON.parse(raw)
+                // filter out stale timers written by other peers
+                const valid: TimerState = {}
+                Object.entries(incoming).forEach(([idStr, iso]) => {
+                    const id = Number(idStr)
+                    const mvp = mvps.find((m) => m.id === id)
+                    if (!mvp || !iso) return
+                    const mvpWithTime = { ...mvp, timeOfDeath: DateTime.fromISO(iso as string) }
+                    const { maximumDifferenceInMinutes } = computeMvpDifferenceTimers(mvpWithTime)
+                    if (maximumDifferenceInMinutes < 0) valid[id] = iso as string
+                })
 
-            if (message.type === 'FULL_STATE') {
-                // Merge incoming with current valid state before emitting
-                const currentState = sanitizeState(mvps)
-                const merged = mergeTimers(currentState, message.payload, mvps)
+                const merged = mergeTimers(sanitizeState(mvps), valid, mvps)
                 onFullState$.next(merged)
-            }
 
-            if (message.type === 'TIMER_UPDATE') {
-                const { id, timeOfDeath } = message.payload
-                const mvp = mvps.find((m) => m.id === id)
-                if (!mvp) return
-                const mvpWithTime = { ...mvp, timeOfDeath: DateTime.fromISO(timeOfDeath) }
-                // Only emit if timer is still valid
-                const { maximumDifferenceInMinutes } = computeMvpDifferenceTimers(mvpWithTime)
+                // also emit individual updates so TrackingContainer dispatcher works
+                Object.entries(merged).forEach(([idStr, timeOfDeath]) => {
+                    onTimerUpdate$.next({ id: Number(idStr), timeOfDeath })
+                })
+            })
 
-                if (maximumDifferenceInMinutes < 0) {
-                    onTimerUpdate$.next({ id, timeOfDeath })
-                }
-            }
-
-            if (message.type === 'REQUEST_STATE') {
-                // Only host receives this — re-broadcast current full state
-                sendMessage({ type: 'FULL_STATE', payload: sanitizeState(mvps) })
-            }
+            firebaseUnsubscribe.current.push(unsub)
         },
-        [onFullState$, onTimerUpdate$, sendMessage]
+        [onFullState$, onTimerUpdate$]
     )
-
-    const setupDataChannel = useCallback(
-        (channel: RTCDataChannel, mvps: RagnarokMvp[], isHost: boolean) => {
-            channelReference.current = channel
-
-            channel.onopen = () => {
-                setSessionState(isHost ? SessionState.hosting : SessionState.joined)
-                if (!isHost) {
-                    // Guest requests full state immediately on connection
-                    sendMessage({ type: 'REQUEST_STATE' })
-                } else {
-                    // Host pushes full state immediately to new guest
-                    sendMessage({ type: 'FULL_STATE', payload: sanitizeState(mvps) })
-                }
-            }
-
-            channel.onmessage = ({ data }) => handleIncomingMessage(data, mvps)
-
-            channel.onclose = () => {
-                // host manages their own lifecycle
-                if (isHost) {
-                    return
-                }
-
-                // Guest lost connection — attempt graceful notice
-                setSessionState(SessionState.idle)
-            }
-        },
-        [sendMessage, handleIncomingMessage]
-    )
-
-    // ── Firebase signaling cleanup ─────────────────────────────────────────────
-    const cleanupFirebaseRoom = useCallback((code: string) => {
-        const database = getFirebaseDb()
-        remove(ref(database, `rooms/${code}`))
-    }, [])
 
     // ── Host ───────────────────────────────────────────────────────────────────
     const hostSession = useCallback(
         async (mvps: RagnarokMvp[]): Promise<string> => {
             cleanup()
+            mvpsRef.current = mvps
             setSessionState(SessionState.connecting)
 
             const code = getOrCreateRoomCode()
             setRoomCode(code)
+
             const database = getFirebaseDb()
-            const peerConnection = createPeerConnection()
 
-            // Host creates the DataChannel
-            const channel = peerConnection.createDataChannel('timers')
-            setupDataChannel(channel, mvps, true)
+            // Write current local state to the room so guests see it immediately
+            const initialState = sanitizeState(mvps)
+            await set(ref(database, `rooms/${code}/timers`), initialState)
 
-            // Buffer guest candidates until remote description (answer) is set
-            const pendingCandidates: RTCIceCandidateInit[] = []
-            let remoteDescriptionSet = false
-
-            const applyPendingCandidates = () => {
-                pendingCandidates.splice(0).forEach((c) => {
-                    peerConnection.addIceCandidate(new RTCIceCandidate(c))
-                })
-            }
-
-            peerConnection.onicecandidate = ({ candidate }) => {
-                if (candidate) {
-                    console.log('[Host] ICE candidate gathered:', candidate.type, candidate.protocol, candidate.address)
-                    push(ref(database, `rooms/${code}/hostCandidates`), candidate.toJSON())
-                }
-            }
-
-            const offer = await peerConnection.createOffer()
-            await peerConnection.setLocalDescription(offer)
-            await set(ref(database, `rooms/${code}/offer`), { type: offer.type, sdp: offer.sdp })
-
-            const answerUnsub = onValue(ref(database, `rooms/${code}/answer`), async (snap) => {
-                if (snap.exists() && !peerConnection.currentRemoteDescription) {
-                    await peerConnection.setRemoteDescription(new RTCSessionDescription(snap.val()))
-                    remoteDescriptionSet = true
-                    applyPendingCandidates()
-                }
-            })
-
-            const guestCandidatesUnsub = onChildAdded(ref(database, `rooms/${code}/guestCandidates`), (snap) => {
-                if (!snap.exists()) return
-                const candidate = snap.val()
-                if (remoteDescriptionSet) {
-                    peerConnection.addIceCandidate(new RTCIceCandidate(candidate))
-                } else {
-                    pendingCandidates.push(candidate)
-                }
-            })
-
-            firebaseUnsubscribe.current.push(answerUnsub, guestCandidatesUnsub)
-
-            channel.addEventListener(
-                'open',
-                () => {
-                    setTimeout(() => cleanupFirebaseRoom(code), 3000)
-                },
-                { once: true }
-            )
+            subscribeToRoom(code)
+            setSessionState(SessionState.hosting)
 
             return code
         },
-        [cleanup, createPeerConnection, setupDataChannel, cleanupFirebaseRoom]
+        [cleanup, subscribeToRoom]
     )
 
     // ── Guest ──────────────────────────────────────────────────────────────────
     const joinSession = useCallback(
         async (code: string, mvps: RagnarokMvp[]): Promise<void> => {
             cleanup()
+            mvpsRef.current = mvps
             setSessionState(SessionState.connecting)
             setRoomCode(code)
 
-            const database = getFirebaseDb()
-            const peerConnection = createPeerConnection()
-
-            const pendingCandidates: RTCIceCandidateInit[] = []
-            let remoteDescriptionSet = false
-
-            const applyPendingCandidates = () => {
-                pendingCandidates.splice(0).forEach((c) => {
-                    peerConnection.addIceCandidate(new RTCIceCandidate(c))
-                })
-            }
-
-            peerConnection.ondatachannel = ({ channel }) => {
-                setupDataChannel(channel, mvps, false)
-            }
-
-            peerConnection.onicecandidate = ({ candidate }) => {
-                if (candidate) {
-                    push(ref(database, `rooms/${code}/guestCandidates`), candidate.toJSON())
-                }
-            }
-
-            const offerUnsub = onValue(ref(database, `rooms/${code}/offer`), async (snap) => {
-                if (!snap.exists() || peerConnection.currentRemoteDescription) return
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(snap.val()))
-                const answer = await peerConnection.createAnswer()
-                await peerConnection.setLocalDescription(answer)
-                await set(ref(database, `rooms/${code}/answer`), { type: answer.type, sdp: answer.sdp })
-                remoteDescriptionSet = true
-                applyPendingCandidates()
-            })
-
-            const hostCandidatesUnsub = onChildAdded(ref(database, `rooms/${code}/hostCandidates`), (snap) => {
-                if (!snap.exists()) return
-                const candidate = snap.val()
-                if (remoteDescriptionSet) {
-                    peerConnection.addIceCandidate(new RTCIceCandidate(candidate))
-                } else {
-                    pendingCandidates.push(candidate)
-                }
-            })
-
-            firebaseUnsubscribe.current.push(offerUnsub, hostCandidatesUnsub)
+            subscribeToRoom(code)
+            setSessionState(SessionState.joined)
         },
-        [cleanup, createPeerConnection, setupDataChannel]
+        [cleanup, subscribeToRoom]
     )
 
-    // ── Outbound broadcast ────────────────────────────────────────────────────
+    // ── Outbound broadcast ─────────────────────────────────────────────────────
     const broadcastUpdate = useCallback(
         (id: number, timeOfDeath: DateTime | null) => {
-            sendMessage({
-                type: 'TIMER_UPDATE',
-                payload: { id, timeOfDeath: timeOfDeath ? timeOfDeath.toISO()! : '' },
-            })
+            const code = roomCode
+            if (!code) return
+
+            const database = getFirebaseDb()
+            const path = ref(database, `rooms/${code}/timers/${id}`)
+
+            if (timeOfDeath) {
+                set(path, timeOfDeath.toISO())
+            } else {
+                remove(path)
+            }
         },
-        [sendMessage]
+        [roomCode]
     )
 
-    // ── Cleanup on unmount ────────────────────────────────────────────────────
+    // ── Cleanup on unmount ─────────────────────────────────────────────────────
     useEffect(() => {
         return () => cleanup()
     }, [cleanup])
