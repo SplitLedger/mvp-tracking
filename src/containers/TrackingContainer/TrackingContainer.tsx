@@ -1,28 +1,32 @@
-import { Fragment, type ReactElement, useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import { Fragment, type ReactElement, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { DateTime } from 'luxon'
 import { debounceTime, Subject } from 'rxjs'
 import { Box, Button, DropdownMenu, Flex, IconButton, Popover, Text, TextField, Tooltip } from '@radix-ui/themes'
 import {
     Cross1Icon,
+    DownloadIcon,
     EnterIcon,
     ExclamationTriangleIcon,
-    ExitIcon,
     ExternalLinkIcon,
     GlobeIcon,
     HamburgerMenuIcon,
     MagnifyingGlassIcon,
     MoonIcon,
+    PlusIcon,
     ResetIcon,
+    Share1Icon,
     StarFilledIcon,
     TargetIcon,
     TimerIcon,
     UpdateIcon,
+    UploadIcon,
 } from '@radix-ui/react-icons'
 import { toast } from 'sonner'
 // app
 import {
     HistoryDialog,
     ImportDialog,
+    JoinSessionDialog,
     MvpInformation,
     ResetDialog,
     TimeZoneDialog,
@@ -31,6 +35,7 @@ import {
 } from '@/components'
 import { computeTimeZone, computeTrackingInitialState, sortTrackingMvpList } from '@/helpers'
 import { defaultDateTimeFormat, localStorageMvpsKey } from '@/constants'
+import { useLocation } from 'react-router'
 // self
 import {
     Header,
@@ -51,6 +56,7 @@ import {
     type TrackingChange,
     TrackingChangeAction,
 } from './types'
+import { SessionState, useWebRTC } from '@/services/webrtc'
 
 const reducer = (currentState: RagnarokMvp[], beingModified: DispatcherStateModifier) => {
     if (beingModified.fullReset) {
@@ -80,6 +86,9 @@ const computeUndoAction = (action: TrackingChangeAction): TrackingChangeAction =
 }
 
 const TrackingContainer = (): ReactElement => {
+    const location = useLocation()
+    const webrtc = useWebRTC()
+
     const searchSubject = useRef(new Subject<string>()).current
     const searchInputRef = useRef<HTMLInputElement>(null)
 
@@ -91,6 +100,9 @@ const TrackingContainer = (): ReactElement => {
     const [resetDialog, setResetDialog] = useState(false)
     const [serverTimeDialog, setServerTimeDialog] = useState(false)
     const [importDialog, setImportDialog] = useState(false)
+    const [joinSessionDialog, setJoinSessionDialog] = useState(false)
+
+    const isLive = useMemo(() => location.pathname === '/live', [location.pathname])
 
     const cleanSearchInput = useCallback(() => {
         setSearchMvp('')
@@ -122,6 +134,7 @@ const TrackingContainer = (): ReactElement => {
             timeOfDeathTo: updateTime,
         })
         dispatcher({ mvp, timeOfDeathToUpdate: updateTime })
+        webrtc.broadcastUpdate(mvp.id, updateTime)
         cleanSearchInput()
     }
 
@@ -140,6 +153,7 @@ const TrackingContainer = (): ReactElement => {
                 timeOfDeathTo: tombTime,
             })
             dispatcher({ mvp, timeOfDeathToUpdate: tombTime })
+            webrtc.broadcastUpdate(mvp.id, tombTime)
             cleanSearchInput()
         },
         []
@@ -154,6 +168,7 @@ const TrackingContainer = (): ReactElement => {
                 timeOfDeathTo: null,
             })
             dispatcher({ mvp, timeOfDeathToUpdate: null })
+            webrtc.broadcastUpdate(mvp.id, null)
         },
         []
     )
@@ -169,6 +184,7 @@ const TrackingContainer = (): ReactElement => {
                 timeOfDeathTo: null,
             })
             dispatcher({ mvp: undo.mvp, timeOfDeathToUpdate: undo.timeOfDeathFrom })
+            webrtc.broadcastUpdate(undo.mvp.id, undo.timeOfDeathFrom)
         },
         []
     )
@@ -234,6 +250,36 @@ const TrackingContainer = (): ReactElement => {
         [addChangeToHistory]
     )
 
+    const hostSession = useCallback(() => {
+        webrtc.hostSession(mvpsList).then((code) => {
+            navigator.clipboard
+                .writeText(code)
+                .then(() => {
+                    toast.success('Session started', {
+                        description: 'Room code copied to clipboard',
+                    })
+                })
+                .catch(() => {
+                    toast.success('Session started')
+                })
+        })
+    }, [mvpsList, webrtc])
+
+    const copyRoomCode = useCallback(() => {
+        if (webrtc.roomCode) {
+            navigator.clipboard
+                .writeText(webrtc.roomCode)
+                .then(() => {
+                    toast.success('Room code copied to clipboard')
+                })
+                .catch(() => {
+                    toast.error('Failed to copy room code')
+                })
+        }
+    }, [webrtc])
+
+    const onJoinSession = useCallback((code: string) => webrtc.joinSession(code, mvpsList), [webrtc, mvpsList])
+
     useEffect(() => {
         const searchSubscription = searchSubject.pipe(debounceTime(300)).subscribe((search) => {
             setSearchMvp(search)
@@ -243,6 +289,33 @@ const TrackingContainer = (): ReactElement => {
             searchSubscription.unsubscribe()
         }
     }, [])
+
+    useEffect(() => {
+        const fullStateSub = webrtc.onFullState$.subscribe((timers) => {
+            const entries = Object.entries(timers).reduce<{ mvp: RagnarokMvp; timeOfDeath: DateTime }[]>(
+                (acc, [idStr, timeOfDeath]) => {
+                    const mvp = mvpsList.find((mvp) => mvp.id === Number(idStr))
+                    if (!mvp) return acc
+                    return [...acc, { mvp, timeOfDeath: DateTime.fromISO(timeOfDeath) }]
+                },
+                []
+            )
+            importTimers(entries)
+        })
+
+        const timerUpdateSub = webrtc.onTimerUpdate$.subscribe(({ id, timeOfDeath }) => {
+            const mvp = mvpsList.find((mvp) => mvp.id === id)
+            if (!mvp) {
+                return
+            }
+            dispatcher({ mvp, timeOfDeathToUpdate: DateTime.fromISO(timeOfDeath) })
+        })
+
+        return () => {
+            fullStateSub.unsubscribe()
+            timerUpdateSub.unsubscribe()
+        }
+    }, [webrtc.onFullState$, webrtc.onTimerUpdate$, mvpsList])
 
     const searchFilteredMvps = mvpsList.filter(
         (mvp) =>
@@ -273,6 +346,8 @@ const TrackingContainer = (): ReactElement => {
                 onOpenChange={setImportDialog}
             />
 
+            <JoinSessionDialog onJoin={onJoinSession} onOpenChange={setJoinSessionDialog} open={joinSessionDialog} />
+
             <Header>
                 <Flex gap="4">
                     <DropdownMenu.Root>
@@ -282,6 +357,36 @@ const TrackingContainer = (): ReactElement => {
                             </IconButton>
                         </DropdownMenu.Trigger>
                         <DropdownMenu.Content>
+                            {isLive && webrtc.sessionState === SessionState.idle && (
+                                <DropdownMenu.Item onClick={hostSession}>
+                                    <PlusIcon /> Create live session
+                                </DropdownMenu.Item>
+                            )}
+
+                            {isLive && webrtc.sessionState === SessionState.idle && (
+                                <DropdownMenu.Item
+                                    onClick={() => {
+                                        setJoinSessionDialog(true)
+                                    }}
+                                >
+                                    <EnterIcon /> Join live session
+                                </DropdownMenu.Item>
+                            )}
+
+                            {isLive && webrtc.roomCode && (
+                                <DropdownMenu.Item onClick={copyRoomCode}>
+                                    <Share1Icon /> Share live session
+                                </DropdownMenu.Item>
+                            )}
+
+                            {isLive && webrtc.sessionState !== SessionState.idle && (
+                                <DropdownMenu.Item color="red" onClick={webrtc.leaveSession}>
+                                    <Cross1Icon /> Leave session
+                                </DropdownMenu.Item>
+                            )}
+
+                            {isLive && <DropdownMenu.Separator />}
+
                             <DropdownMenu.Item
                                 disabled={!changesState.length}
                                 onClick={!changesState.length ? undefined : () => setHistoryDialog(true)}
@@ -297,12 +402,14 @@ const TrackingContainer = (): ReactElement => {
                                 disabled={!trackedMvps.length}
                                 onClick={!trackedMvps.length ? undefined : shareTimers}
                             >
-                                <ExitIcon /> Copy timers
+                                <UploadIcon /> Copy timers
                             </DropdownMenu.Item>
                             <DropdownMenu.Item onClick={() => setImportDialog(true)}>
-                                <EnterIcon /> Import timers
+                                <DownloadIcon /> Import timers
                             </DropdownMenu.Item>
+
                             <DropdownMenu.Separator />
+
                             <DropdownMenu.Item asChild>
                                 <a href="https://github.com/recs182/mvp-tracking/issues" target="_blank">
                                     <ExternalLinkIcon /> Bug or Feature Request
@@ -351,7 +458,32 @@ const TrackingContainer = (): ReactElement => {
                     <Tooltip content="This timers do not update. If they are completely off, just refresh the page">
                         <Text size="1">Server time: {serverTime.toFormat('HH:mm')}</Text>
                     </Tooltip>
-                    <Text size="1">Your time: {localTime.toFormat('HH:mm')} </Text>
+                    <Text size="1">Your time: {localTime.toFormat('HH:mm')}</Text>
+
+                    {webrtc.sessionState === SessionState.connecting && (
+                        <Text size="1" color="yellow">
+                            ⏳ Connecting...
+                        </Text>
+                    )}
+
+                    {webrtc.sessionState === SessionState.hosting && (
+                        <Tooltip content="Click to copy room code">
+                            <Text
+                                size="1"
+                                color="green"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => navigator.clipboard.writeText(webrtc.roomCode!)}
+                            >
+                                🟢 Sharing — {webrtc.roomCode}
+                            </Text>
+                        </Tooltip>
+                    )}
+
+                    {webrtc.sessionState === SessionState.joined && (
+                        <Text size="1" color="green">
+                            🟢 Connected — {webrtc.roomCode}
+                        </Text>
+                    )}
                 </HeaderDisplayDates>
             </Header>
 
