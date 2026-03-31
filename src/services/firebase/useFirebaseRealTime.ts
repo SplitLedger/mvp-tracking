@@ -68,7 +68,6 @@ export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
         setRoomCode(null)
     }, [roomCode])
 
-    // ── Shared: subscribe to room timer changes ────────────────────────────────
     const subscribeToRoom = useCallback(
         (code: string) => {
             const database = getFirebaseDb()
@@ -102,14 +101,12 @@ export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
         [onFullState$, onTimerUpdate$]
     )
 
-    // ── Host presence check ────────────────────────────────────────────────────
     const checkForHost = useCallback(async (code: string): Promise<boolean> => {
         const database = getFirebaseDb()
         const snap = await get(ref(database, `rooms/${code}/host`))
         return snap.exists() && snap.val() === true
     }, [])
 
-    // ── Host ───────────────────────────────────────────────────────────────────
     const hostSession = useCallback(
         async (mvps: RagnarokMvp[]): Promise<string> => {
             cleanup()
@@ -135,7 +132,6 @@ export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
         [cleanup, subscribeToRoom]
     )
 
-    // ── Guest ──────────────────────────────────────────────────────────────────
     const joinSession = useCallback(
         async (code: string, mvps: RagnarokMvp[]): Promise<void> => {
             cleanup()
@@ -152,11 +148,12 @@ export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
         [cleanup, subscribeToRoom]
     )
 
-    // ── Outbound broadcast ─────────────────────────────────────────────────────
     const broadcastUpdate = useCallback(
         (id: number, timeOfDeath: DateTime | null) => {
             const code = roomCode
-            if (!code) return
+            if (!code) {
+                return
+            }
 
             const database = getFirebaseDb()
             const path = ref(database, `rooms/${code}/timers/${id}`)
@@ -170,7 +167,6 @@ export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
         [roomCode]
     )
 
-    // ── Cleanup on unmount ─────────────────────────────────────────────────────
     useEffect(() => {
         return () => cleanup()
     }, [cleanup])
