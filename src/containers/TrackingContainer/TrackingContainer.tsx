@@ -278,6 +278,11 @@ const TrackingContainer = (): ReactElement => {
 
     const onJoinSession = useCallback((code: string) => webrtc.joinSession(code, mvpsList), [webrtc, mvpsList])
 
+    const onLeaveSession = useCallback(() => {
+        webrtc.leaveSession()
+        localStorage.removeItem(localStorageMvpsKey)
+    }, [webrtc])
+
     useEffect(() => {
         const searchSubscription = searchSubject.pipe(debounceTime(300)).subscribe((search) => {
             setSearchMvp(search)
@@ -378,7 +383,7 @@ const TrackingContainer = (): ReactElement => {
                             )}
 
                             {isLive && webrtc.sessionState !== SessionState.idle && (
-                                <DropdownMenu.Item color="red" onClick={webrtc.leaveSession}>
+                                <DropdownMenu.Item color="red" onClick={onLeaveSession}>
                                     <Cross1Icon /> Leave session
                                 </DropdownMenu.Item>
                             )}
@@ -472,14 +477,14 @@ const TrackingContainer = (): ReactElement => {
                                 style={{ cursor: 'pointer' }}
                                 onClick={() => navigator.clipboard.writeText(webrtc.roomCode!)}
                             >
-                                🟢 Sharing — {webrtc.roomCode}
+                                🟢 Sharing
                             </Text>
                         </Tooltip>
                     )}
 
                     {webrtc.sessionState === SessionState.joined && (
                         <Text size="1" color="green">
-                            🟢 Connected — {webrtc.roomCode}
+                            🟢 Connected
                         </Text>
                     )}
                 </HeaderDisplayDates>

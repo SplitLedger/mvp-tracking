@@ -15,7 +15,7 @@ export const JoinSessionDialog = ({ open, onOpenChange, onJoin }: JoinSessionDia
     const [error, setError] = useState<string | null>(null)
 
     const handleJoin = async () => {
-        const trimmed = code.trim().toUpperCase()
+        const trimmed = code.trim()
 
         setError(null)
         setIsJoining(true)
@@ -44,7 +44,7 @@ export const JoinSessionDialog = ({ open, onOpenChange, onJoin }: JoinSessionDia
                         placeholder={`e.g. ${v4()}`}
                         value={code}
                         onChange={(event) => {
-                            setCode(event.target.value.toUpperCase())
+                            setCode(event.target.value)
                             setError(null)
                         }}
                         onKeyDown={(event) => {

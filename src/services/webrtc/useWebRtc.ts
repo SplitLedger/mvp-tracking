@@ -119,7 +119,7 @@ export const useWebRTC = (): UseWebRTCReturn => {
             channel.onopen = () => {
                 setSessionState(isHost ? SessionState.hosting : SessionState.joined)
                 if (!isHost) {
-                    // Guest requests full state immediately on connect
+                    // Guest requests full state immediately on connection
                     sendMessage({ type: 'REQUEST_STATE' })
                 } else {
                     // Host pushes full state immediately to new guest
@@ -139,7 +139,7 @@ export const useWebRTC = (): UseWebRTCReturn => {
                 setSessionState(SessionState.idle)
             }
         },
-        [sendMessage, handleIncomingMessage, channelReference]
+        [sendMessage, handleIncomingMessage]
     )
 
     // ── Firebase signaling cleanup ─────────────────────────────────────────────
@@ -163,36 +163,54 @@ export const useWebRTC = (): UseWebRTCReturn => {
             const channel = peerConnection.createDataChannel('timers')
             setupDataChannel(channel, mvps, true)
 
-            // Write ICE candidates to Firebase as they're discovered
+            // Buffer guest candidates until remote description (answer) is set
+            const pendingCandidates: RTCIceCandidateInit[] = []
+            let remoteDescriptionSet = false
+
+            const applyPendingCandidates = () => {
+                pendingCandidates.splice(0).forEach((c) => {
+                    peerConnection.addIceCandidate(new RTCIceCandidate(c))
+                })
+            }
+
             peerConnection.onicecandidate = ({ candidate }) => {
                 if (candidate) {
+                    console.log('[Host] ICE candidate gathered:', candidate.type, candidate.protocol, candidate.address)
                     push(ref(database, `rooms/${code}/hostCandidates`), candidate.toJSON())
                 }
             }
 
-            // Create and store offer
             const offer = await peerConnection.createOffer()
             await peerConnection.setLocalDescription(offer)
             await set(ref(database, `rooms/${code}/offer`), { type: offer.type, sdp: offer.sdp })
 
-            // Listen for guest answer
             const answerUnsub = onValue(ref(database, `rooms/${code}/answer`), async (snap) => {
                 if (snap.exists() && !peerConnection.currentRemoteDescription) {
                     await peerConnection.setRemoteDescription(new RTCSessionDescription(snap.val()))
+                    remoteDescriptionSet = true
+                    applyPendingCandidates()
                 }
             })
 
-            // Apply guest ICE candidates one-by-one as they arrive
             const guestCandidatesUnsub = onChildAdded(ref(database, `rooms/${code}/guestCandidates`), (snap) => {
-                if (snap.exists()) {
-                    peerConnection.addIceCandidate(new RTCIceCandidate(snap.val()))
+                if (!snap.exists()) return
+                const candidate = snap.val()
+                if (remoteDescriptionSet) {
+                    peerConnection.addIceCandidate(new RTCIceCandidate(candidate))
+                } else {
+                    pendingCandidates.push(candidate)
                 }
             })
 
             firebaseUnsubscribe.current.push(answerUnsub, guestCandidatesUnsub)
 
-            // Remove the room only after the channel opens — but give the guest time to finish
-            channel.addEventListener('open', () => setTimeout(() => cleanupFirebaseRoom(code), 3000), { once: true })
+            channel.addEventListener(
+                'open',
+                () => {
+                    setTimeout(() => cleanupFirebaseRoom(code), 3000)
+                },
+                { once: true }
+            )
 
             return code
         },
@@ -209,7 +227,6 @@ export const useWebRTC = (): UseWebRTCReturn => {
             const database = getFirebaseDb()
             const peerConnection = createPeerConnection()
 
-            // Buffer candidates until remote description is set
             const pendingCandidates: RTCIceCandidateInit[] = []
             let remoteDescriptionSet = false
 
@@ -219,19 +236,16 @@ export const useWebRTC = (): UseWebRTCReturn => {
                 })
             }
 
-            // Guest receives the DataChannel from host
             peerConnection.ondatachannel = ({ channel }) => {
                 setupDataChannel(channel, mvps, false)
             }
 
-            // Write guest ICE candidates
             peerConnection.onicecandidate = ({ candidate }) => {
                 if (candidate) {
                     push(ref(database, `rooms/${code}/guestCandidates`), candidate.toJSON())
                 }
             }
 
-            // Read host offer and respond
             const offerUnsub = onValue(ref(database, `rooms/${code}/offer`), async (snap) => {
                 if (!snap.exists() || peerConnection.currentRemoteDescription) return
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(snap.val()))
@@ -242,7 +256,6 @@ export const useWebRTC = (): UseWebRTCReturn => {
                 applyPendingCandidates()
             })
 
-            // Apply host ICE candidates one-by-one, buffering if needed
             const hostCandidatesUnsub = onChildAdded(ref(database, `rooms/${code}/hostCandidates`), (snap) => {
                 if (!snap.exists()) return
                 const candidate = snap.val()
