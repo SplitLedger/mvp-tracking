@@ -100,7 +100,7 @@ const TrackingContainer = (): ReactElement => {
     const [importDialog, setImportDialog] = useState(false)
     const [joinSessionDialog, setJoinSessionDialog] = useState(false)
 
-    const isLive = useMemo(() => true, [])
+    const isLive = useMemo(() => false, [])
 
     const cleanSearchInput = useCallback(() => {
         setSearchMvp('')
