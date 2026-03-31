@@ -7,10 +7,10 @@ import { v4 } from 'uuid'
 // app
 import type { RagnarokMvp } from '@/containers/TrackingContainer/types'
 import { computeMvpDifferenceTimers } from '@/helpers'
+import { localStorageRoomCodeKey } from '@/constants'
 // self
 import { mergeTimers, sanitizeState, type TimerState } from './validation'
-import { localStorageRoomCodeKey } from '@/constants'
-import { SessionState, type UseWebRTCReturn } from './types'
+import { SessionState, type UseFirebaseRealTimeReturn } from './types'
 
 const firebaseConfigurations = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -19,14 +19,19 @@ const firebaseConfigurations = {
     projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
 }
 
+export const getRoomCode = (): string | null => localStorage.getItem(localStorageRoomCodeKey)
+
 const getFirebaseDb = () => {
     const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfigurations)
     return getDatabase(app)
 }
 
 const getOrCreateRoomCode = (): string => {
-    const existing = localStorage.getItem(localStorageRoomCodeKey)
-    if (existing) return existing
+    const existing = getRoomCode()
+    if (existing) {
+        return existing
+    }
+
     const newCode = v4()
     localStorage.setItem(localStorageRoomCodeKey, newCode)
     return newCode
@@ -37,7 +42,7 @@ export const resetRoomCode = (): string => {
     return getOrCreateRoomCode()
 }
 
-export const useWebRTC = (): UseWebRTCReturn => {
+export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
     const [sessionState, setSessionState] = useState<SessionState>(SessionState.idle)
     const [roomCode, setRoomCode] = useState<string | null>(null)
 
@@ -102,7 +107,7 @@ export const useWebRTC = (): UseWebRTCReturn => {
 
             const database = getFirebaseDb()
 
-            // Write current local state to the room so guests see it immediately
+            // Write the current local state to the room so guests see it immediately
             const initialState = sanitizeState(mvps)
             await set(ref(database, `rooms/${code}/timers`), initialState)
 

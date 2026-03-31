@@ -11,7 +11,7 @@ export enum SessionState {
     joined = 'joined',
 }
 
-export interface UseWebRTCReturn {
+export interface UseFirebaseRealTimeReturn {
     sessionState: SessionState
     roomCode: string | null
     // actions

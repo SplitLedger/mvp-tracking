@@ -35,7 +35,7 @@ import {
 } from '@/components'
 import { computeTimeZone, computeTrackingInitialState, sortTrackingMvpList } from '@/helpers'
 import { defaultDateTimeFormat, localStorageMvpsKey } from '@/constants'
-import { SessionState, useWebRTC } from '@/services/webrtc'
+import { getRoomCode, SessionState, useFirebaseRealTime } from '@/services/firebase'
 // self
 import {
     Header,
@@ -85,7 +85,8 @@ const computeUndoAction = (action: TrackingChangeAction): TrackingChangeAction =
 }
 
 const TrackingContainer = (): ReactElement => {
-    const webrtc = useWebRTC()
+    const existingRoomCode = getRoomCode()
+    const firebaseRealTime = useFirebaseRealTime()
 
     const searchSubject = useRef(new Subject<string>()).current
     const searchInputRef = useRef<HTMLInputElement>(null)
@@ -100,7 +101,7 @@ const TrackingContainer = (): ReactElement => {
     const [importDialog, setImportDialog] = useState(false)
     const [joinSessionDialog, setJoinSessionDialog] = useState(false)
 
-    const isLive = useMemo(() => false, [])
+    const isShareable = useMemo(() => location.host === 'arkana.rot.splitledger.pro', [])
 
     const cleanSearchInput = useCallback(() => {
         setSearchMvp('')
@@ -132,7 +133,7 @@ const TrackingContainer = (): ReactElement => {
             timeOfDeathTo: updateTime,
         })
         dispatcher({ mvp, timeOfDeathToUpdate: updateTime })
-        webrtc.broadcastUpdate(mvp.id, updateTime)
+        firebaseRealTime.broadcastUpdate(mvp.id, updateTime)
         cleanSearchInput()
     }
 
@@ -151,7 +152,7 @@ const TrackingContainer = (): ReactElement => {
                 timeOfDeathTo: tombTime,
             })
             dispatcher({ mvp, timeOfDeathToUpdate: tombTime })
-            webrtc.broadcastUpdate(mvp.id, tombTime)
+            firebaseRealTime.broadcastUpdate(mvp.id, tombTime)
             cleanSearchInput()
         },
         []
@@ -166,7 +167,7 @@ const TrackingContainer = (): ReactElement => {
                 timeOfDeathTo: null,
             })
             dispatcher({ mvp, timeOfDeathToUpdate: null })
-            webrtc.broadcastUpdate(mvp.id, null)
+            firebaseRealTime.broadcastUpdate(mvp.id, null)
         },
         []
     )
@@ -182,7 +183,7 @@ const TrackingContainer = (): ReactElement => {
                 timeOfDeathTo: null,
             })
             dispatcher({ mvp: undo.mvp, timeOfDeathToUpdate: undo.timeOfDeathFrom })
-            webrtc.broadcastUpdate(undo.mvp.id, undo.timeOfDeathFrom)
+            firebaseRealTime.broadcastUpdate(undo.mvp.id, undo.timeOfDeathFrom)
         },
         []
     )
@@ -249,7 +250,7 @@ const TrackingContainer = (): ReactElement => {
     )
 
     const hostSession = useCallback(() => {
-        webrtc.hostSession(mvpsList).then((code) => {
+        firebaseRealTime.hostSession(mvpsList).then((code) => {
             navigator.clipboard
                 .writeText(code)
                 .then(() => {
@@ -261,12 +262,12 @@ const TrackingContainer = (): ReactElement => {
                     toast.success('Session started')
                 })
         })
-    }, [mvpsList, webrtc])
+    }, [mvpsList, firebaseRealTime])
 
     const copyRoomCode = useCallback(() => {
-        if (webrtc.roomCode) {
+        if (firebaseRealTime.roomCode) {
             navigator.clipboard
-                .writeText(webrtc.roomCode)
+                .writeText(firebaseRealTime.roomCode)
                 .then(() => {
                     toast.success('Room code copied to clipboard')
                 })
@@ -274,9 +275,12 @@ const TrackingContainer = (): ReactElement => {
                     toast.error('Failed to copy room code')
                 })
         }
-    }, [webrtc])
+    }, [firebaseRealTime])
 
-    const onJoinSession = useCallback((code: string) => webrtc.joinSession(code, mvpsList), [webrtc, mvpsList])
+    const onJoinSession = useCallback(
+        (code: string) => firebaseRealTime.joinSession(code, mvpsList),
+        [firebaseRealTime, mvpsList]
+    )
 
     useEffect(() => {
         const searchSubscription = searchSubject.pipe(debounceTime(300)).subscribe((search) => {
@@ -288,8 +292,15 @@ const TrackingContainer = (): ReactElement => {
         }
     }, [])
 
+    // AUTO JOINS LATEST ROOM
     useEffect(() => {
-        const fullStateSub = webrtc.onFullState$.subscribe((timers) => {
+        if (isShareable && existingRoomCode) {
+            firebaseRealTime.hostSession(mvpsList)
+        }
+    }, [])
+
+    useEffect(() => {
+        const fullStateSub = firebaseRealTime.onFullState$.subscribe((timers) => {
             const entries = Object.entries(timers).reduce<{ mvp: RagnarokMvp; timeOfDeath: DateTime }[]>(
                 (acc, [idStr, timeOfDeath]) => {
                     const mvp = mvpsList.find((mvp) => mvp.id === Number(idStr))
@@ -301,7 +312,7 @@ const TrackingContainer = (): ReactElement => {
             importTimers(entries)
         })
 
-        const timerUpdateSub = webrtc.onTimerUpdate$.subscribe(({ id, timeOfDeath }) => {
+        const timerUpdateSub = firebaseRealTime.onTimerUpdate$.subscribe(({ id, timeOfDeath }) => {
             const mvp = mvpsList.find((mvp) => mvp.id === id)
             if (!mvp) {
                 return
@@ -313,7 +324,7 @@ const TrackingContainer = (): ReactElement => {
             fullStateSub.unsubscribe()
             timerUpdateSub.unsubscribe()
         }
-    }, [webrtc.onFullState$, webrtc.onTimerUpdate$, mvpsList])
+    }, [firebaseRealTime.onFullState$, firebaseRealTime.onTimerUpdate$, mvpsList])
 
     const searchFilteredMvps = mvpsList.filter(
         (mvp) =>
@@ -355,13 +366,13 @@ const TrackingContainer = (): ReactElement => {
                             </IconButton>
                         </DropdownMenu.Trigger>
                         <DropdownMenu.Content>
-                            {isLive && webrtc.sessionState === SessionState.idle && (
+                            {isShareable && firebaseRealTime.sessionState === SessionState.idle && (
                                 <DropdownMenu.Item onClick={hostSession}>
                                     <PlusIcon /> Create live session
                                 </DropdownMenu.Item>
                             )}
 
-                            {isLive && webrtc.sessionState === SessionState.idle && (
+                            {isShareable && firebaseRealTime.sessionState === SessionState.idle && (
                                 <DropdownMenu.Item
                                     onClick={() => {
                                         setJoinSessionDialog(true)
@@ -371,19 +382,19 @@ const TrackingContainer = (): ReactElement => {
                                 </DropdownMenu.Item>
                             )}
 
-                            {isLive && webrtc.roomCode && (
+                            {isShareable && firebaseRealTime.roomCode && (
                                 <DropdownMenu.Item onClick={copyRoomCode}>
                                     <Share1Icon /> Share live session
                                 </DropdownMenu.Item>
                             )}
 
-                            {isLive && webrtc.sessionState !== SessionState.idle && (
-                                <DropdownMenu.Item color="red" onClick={webrtc.leaveSession}>
+                            {isShareable && firebaseRealTime.sessionState !== SessionState.idle && (
+                                <DropdownMenu.Item color="red" onClick={firebaseRealTime.leaveSession}>
                                     <Cross1Icon /> Leave session
                                 </DropdownMenu.Item>
                             )}
 
-                            {isLive && <DropdownMenu.Separator />}
+                            {isShareable && <DropdownMenu.Separator />}
 
                             <DropdownMenu.Item
                                 disabled={!changesState.length}
@@ -458,26 +469,26 @@ const TrackingContainer = (): ReactElement => {
                     </Tooltip>
                     <Text size="1">Your time: {localTime.toFormat('HH:mm')}</Text>
 
-                    {webrtc.sessionState === SessionState.connecting && (
+                    {firebaseRealTime.sessionState === SessionState.connecting && (
                         <Text size="1" color="yellow">
                             ⏳ Connecting...
                         </Text>
                     )}
 
-                    {webrtc.sessionState === SessionState.hosting && (
+                    {firebaseRealTime.sessionState === SessionState.hosting && (
                         <Tooltip content="Click to copy room code">
                             <Text
                                 size="1"
                                 color="green"
                                 style={{ cursor: 'pointer' }}
-                                onClick={() => navigator.clipboard.writeText(webrtc.roomCode!)}
+                                onClick={() => navigator.clipboard.writeText(firebaseRealTime.roomCode!)}
                             >
                                 🟢 Sharing
                             </Text>
                         </Tooltip>
                     )}
 
-                    {webrtc.sessionState === SessionState.joined && (
+                    {firebaseRealTime.sessionState === SessionState.joined && (
                         <Text size="1" color="green">
                             🟢 Connected
                         </Text>
