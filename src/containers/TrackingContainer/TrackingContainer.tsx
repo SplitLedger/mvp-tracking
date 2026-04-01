@@ -102,7 +102,10 @@ const TrackingContainer = (): ReactElement => {
     const [importDialog, setImportDialog] = useState(false)
     const [joinSessionDialog, setJoinSessionDialog] = useState(false)
 
-    const isShareable = useMemo(() => ['arkana.rot.splitledger.pro', 'localhost'].includes(location.hostname), [])
+    const isShareable = useMemo(
+        () => ['.rot.splitledger.pro', 'localhost'].some((hostname) => location.hostname.includes(hostname)),
+        []
+    )
 
     const cleanSearchInput = useCallback(() => {
         setSearchMvp('')
