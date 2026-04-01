@@ -2,6 +2,7 @@ import { DateTime } from 'luxon'
 import mvpsFromStatic from '@/assets/mvps'
 import { localStorageMvpsKey } from '@/constants'
 import type { RagnarokMvp } from '@/containers/TrackingContainer/types'
+import { computeTimeZone } from '@/helpers'
 
 type ComputeTrackingInitialState = () => RagnarokMvp[]
 
@@ -19,7 +20,7 @@ export const computeTrackingInitialState: ComputeTrackingInitialState = () => {
             const timeOfDeath = retroState[mvp.id]
             return {
                 ...mvp,
-                timeOfDeath: timeOfDeath ? DateTime.fromISO(timeOfDeath) : null,
+                timeOfDeath: timeOfDeath ? DateTime.fromISO(timeOfDeath).setZone(computeTimeZone()) : null,
             }
         })
     } catch (error) {

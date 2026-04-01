@@ -318,7 +318,7 @@ const TrackingContainer = (): ReactElement => {
                 (acc, [idStr, timeOfDeath]) => {
                     const mvp = mvpsList.find((mvp) => mvp.id === Number(idStr))
                     if (!mvp) return acc
-                    return [...acc, { mvp, timeOfDeath: DateTime.fromISO(timeOfDeath) }]
+                    return [...acc, { mvp, timeOfDeath: DateTime.fromISO(timeOfDeath).setZone(computeTimeZone()) }]
                 },
                 []
             )
@@ -330,7 +330,7 @@ const TrackingContainer = (): ReactElement => {
             if (!mvp) {
                 return
             }
-            dispatcher({ mvp, timeOfDeathToUpdate: DateTime.fromISO(timeOfDeath) })
+            dispatcher({ mvp, timeOfDeathToUpdate: DateTime.fromISO(timeOfDeath).setZone(computeTimeZone()) })
         })
 
         return () => {
