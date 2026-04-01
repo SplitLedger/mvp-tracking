@@ -6,7 +6,7 @@ import { Subject } from 'rxjs'
 import { v4 } from 'uuid'
 // app
 import type { RagnarokMvp } from '@/containers/TrackingContainer/types'
-import { computeMvpDifferenceTimers } from '@/helpers'
+import { computeMvpDifferenceTimers, computeTimeZone } from '@/helpers'
 import { localStorageRoomCodeKey } from '@/constants'
 // self
 import { mergeTimers, sanitizeState, type TimerState } from './validation'
@@ -32,15 +32,15 @@ const getOrCreateRoomCode = (): string => {
         return existing
     }
 
-    const newCode = v4()
-    localStorage.setItem(localStorageRoomCodeKey, newCode)
-    return newCode
+    const newRoomCode = v4()
+    localStorage.setItem(localStorageRoomCodeKey, newRoomCode)
+    return newRoomCode
 }
 
 export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
     const [sessionState, setSessionState] = useState<SessionState>(SessionState.idle)
-    const [roomCode, setRoomCode] = useState<string | null>(null)
 
+    const roomCodeRef = useRef<string | null>(null)
     const onFullState$ = useRef(new Subject<TimerState>()).current
     const onTimerUpdate$ = useRef(new Subject<{ id: number; timeOfDeath: string }>()).current
 
@@ -53,14 +53,14 @@ export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
         firebaseUnsubscribe.current = []
 
         setSessionState(SessionState.idle)
-        setRoomCode(null)
-    }, [roomCode])
+        roomCodeRef.current = null
+    }, [])
 
     const subscribeToRoom = useCallback(
-        (code: string) => {
+        (roomCode: string) => {
             const database = getFirebaseDb()
 
-            const unsub = onValue(ref(database, `rooms/${code}/timers`), (snap) => {
+            const unsub = onValue(ref(database, `rooms/${roomCode}/timers`), (snap) => {
                 const mvps = mvpsRef.current
                 const incoming: TimerState = snap.val() ?? {}
 
@@ -73,9 +73,12 @@ export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
                         return
                     }
 
-                    const mvpWithTime = { ...mvp, timeOfDeath: DateTime.fromISO(iso as string) }
+                    const mvpWithTime = {
+                        ...mvp,
+                        timeOfDeath: DateTime.fromISO(iso as string).setZone(computeTimeZone()),
+                    }
                     const { maximumDifferenceInMinutes } = computeMvpDifferenceTimers(mvpWithTime)
-                    if (maximumDifferenceInMinutes < 0) {
+                    if (maximumDifferenceInMinutes < 15) {
                         valid[id] = iso as string
                     }
                 })
@@ -94,9 +97,9 @@ export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
         [onFullState$, onTimerUpdate$]
     )
 
-    const checkRoomExists = useCallback(async (code: string): Promise<boolean> => {
+    const checkRoomExists = useCallback(async (roomCode: string): Promise<boolean> => {
         const database = getFirebaseDb()
-        const snap = await get(ref(database, `rooms/${code}`))
+        const snap = await get(ref(database, `rooms/${roomCode}`))
         return snap.exists()
     }, [])
 
@@ -105,54 +108,51 @@ export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
             mvpsRef.current = mvps
             setSessionState(SessionState.connecting)
 
-            const code = getOrCreateRoomCode()
-            setRoomCode(code)
+            const roomCode = getOrCreateRoomCode()
+            roomCodeRef.current = roomCode
 
             const database = getFirebaseDb()
 
-            await set(ref(database, `rooms/${code}/timers`), sanitizeState(mvps))
+            await set(ref(database, `rooms/${roomCode}/timers`), sanitizeState(mvps))
 
-            subscribeToRoom(code)
+            subscribeToRoom(roomCode)
             setSessionState(SessionState.hosting)
 
-            return code
+            return roomCode
         },
         [subscribeToRoom]
     )
 
     const joinSession = useCallback(
-        async (code: string, mvps: RagnarokMvp[]): Promise<void> => {
-            localStorage.setItem(localStorageRoomCodeKey, code)
+        async (roomCode: string, mvps: RagnarokMvp[]): Promise<void> => {
+            roomCodeRef.current = roomCode
+            localStorage.setItem(localStorageRoomCodeKey, roomCode)
 
             mvpsRef.current = mvps
-            setSessionState(SessionState.connecting)
 
-            setRoomCode(code)
-            subscribeToRoom(code)
+            setSessionState(SessionState.connecting)
+            subscribeToRoom(roomCode)
 
             setSessionState(SessionState.joined)
         },
         [subscribeToRoom]
     )
 
-    const broadcastUpdate = useCallback(
-        (id: number, timeOfDeath: DateTime | null) => {
-            const code = roomCode
-            if (!code) {
-                return
-            }
+    const broadcastUpdate = useCallback((id: number, timeOfDeath: DateTime | null) => {
+        const roomCode = roomCodeRef.current
+        if (!roomCode) {
+            return
+        }
 
-            const database = getFirebaseDb()
-            const path = ref(database, `rooms/${code}/timers/${id}`)
+        const database = getFirebaseDb()
+        const path = ref(database, `rooms/${roomCode}/timers/${id}`)
 
-            if (timeOfDeath) {
-                set(path, timeOfDeath.toUTC().toISO())
-            } else {
-                remove(path)
-            }
-        },
-        [roomCode]
-    )
+        if (timeOfDeath) {
+            set(path, timeOfDeath.toUTC().toISO())
+        } else {
+            remove(path)
+        }
+    }, [])
 
     useEffect(() => {
         return () => cleanup()
@@ -160,7 +160,7 @@ export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
 
     return {
         sessionState,
-        roomCode,
+        roomCode: roomCodeRef.current ?? null,
         hostSession,
         joinSession,
         leaveSession: cleanup,

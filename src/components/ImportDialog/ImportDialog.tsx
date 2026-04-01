@@ -8,6 +8,7 @@ import mvpsFromStatic from '@/assets/mvps'
 import type { RagnarokMvp } from '@/containers/TrackingContainer/types'
 import { defaultDateTimeFormat } from '@/constants'
 import { MvpSprite, MvpSpriteContainer } from '@/containers/TrackingContainer/styles.ts'
+import { computeTimeZone } from '@/helpers'
 
 interface ParsedTimer {
     id: number
@@ -38,7 +39,7 @@ const parseSharedTimers = (raw: string): ParsedTimer[] | null => {
         }
 
         const id = Number(entry.substring(0, separatorIndex))
-        const timeOfDeath = DateTime.fromISO(entry.substring(separatorIndex + 1))
+        const timeOfDeath = DateTime.fromISO(entry.substring(separatorIndex + 1)).setZone(computeTimeZone())
 
         if (Number.isNaN(id) || !timeOfDeath.isValid) {
             return null

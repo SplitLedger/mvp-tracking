@@ -218,9 +218,11 @@ const TrackingContainer = (): ReactElement => {
 
     const shareTimers = useCallback(() => {
         if (trackedMvps) {
-            const toShare = trackedMvps.map((mvp) => {
-                return `${mvp.id}|${mvp.timeOfDeath?.toString()}`
-            })
+            const toShare = trackedMvps
+                .filter((mvp) => mvp.timeOfDeath)
+                .map((mvp) => {
+                    return `${mvp.id}|${(mvp.timeOfDeath as DateTime).toUTC().toISO()}`
+                })
 
             navigator.clipboard
                 .writeText(toShare.join(';'))
