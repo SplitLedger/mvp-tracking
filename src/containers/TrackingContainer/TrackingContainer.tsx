@@ -1,7 +1,19 @@
 import { Fragment, type ReactElement, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { DateTime } from 'luxon'
 import { debounceTime, Subject } from 'rxjs'
-import { Box, Button, DropdownMenu, Flex, IconButton, Popover, Text, TextField, Tooltip } from '@radix-ui/themes'
+import {
+    Box,
+    Button,
+    DropdownMenu,
+    Flex,
+    IconButton,
+    Popover,
+    Separator,
+    Spinner,
+    Text,
+    TextField,
+    Tooltip,
+} from '@radix-ui/themes'
 import {
     Cross1Icon,
     DownloadIcon,
@@ -276,6 +288,18 @@ const TrackingContainer = (): ReactElement => {
             .catch(() => toast.error('Failed to copy live session code'))
     }, [firebaseRealTime.roomCode])
 
+    const badgeSessionState = useMemo<{ color: 'gray' | 'green' | 'yellow'; feedback: string }>(() => {
+        if (firebaseRealTime.sessionState === SessionState.idle) {
+            return { color: 'gray', feedback: 'Not connected' }
+        }
+
+        if (firebaseRealTime.sessionState === SessionState.connecting) {
+            return { color: 'yellow', feedback: 'Connecting' }
+        }
+
+        return { color: 'green', feedback: 'Connected. Receiving and sending real time updates' }
+    }, [firebaseRealTime.sessionState])
+
     // Search debounce
     useEffect(() => {
         const subscription = searchSubject.pipe(debounceTime(300)).subscribe(setSearchMvp)
@@ -342,7 +366,7 @@ const TrackingContainer = (): ReactElement => {
             <JoinSessionDialog onJoin={onJoinSession} onOpenChange={setJoinSessionDialog} open={joinSessionDialog} />
 
             <Header>
-                <Flex gap="4">
+                <Flex gap="2" align="center">
                     <DropdownMenu.Root>
                         <DropdownMenu.Trigger>
                             <IconButton color="gray" variant="surface">
@@ -413,7 +437,7 @@ const TrackingContainer = (): ReactElement => {
 
                     <Popover.Root>
                         <Popover.Trigger>
-                            <Button variant="soft">
+                            <Button>
                                 <StarFilledIcon />
                                 <Box display={{ initial: 'none', sm: 'inline' }}> Donate</Box>
                             </Button>
@@ -429,6 +453,8 @@ const TrackingContainer = (): ReactElement => {
                         </Popover.Content>
                     </Popover.Root>
 
+                    <Separator orientation="vertical" />
+
                     <Flex direction="column" width="100%">
                         <TextField.Root
                             onChange={(changeEvent) => searchSubject.next(changeEvent.target.value)}
@@ -442,27 +468,25 @@ const TrackingContainer = (): ReactElement => {
                             </TextField.Slot>
                         </TextField.Root>
                     </Flex>
+
+                    {isShareable && firebaseRealTime.sessionState !== SessionState.idle && (
+                        <Fragment>
+                            <Separator orientation="vertical" />
+                            <Tooltip content={badgeSessionState.feedback}>
+                                <Button color={badgeSessionState.color} size="1" variant="ghost" type="button">
+                                    <Spinner />
+                                </Button>
+                            </Tooltip>
+                        </Fragment>
+                    )}
                 </Flex>
+
                 <HeaderDisplayDates>
                     <Tooltip content="This timers do not update. If they are completely off, just refresh the page">
                         <Text size="1">Server time: {serverTime.toFormat('HH:mm')}</Text>
                     </Tooltip>
 
-                    {!isShareable && <Text size="1">Your time: {localTime.toFormat('HH:mm')}</Text>}
-
-                    <Flex align="center">
-                        {firebaseRealTime.sessionState === SessionState.connecting && (
-                            <Text size="1" color="yellow">
-                                Connecting
-                            </Text>
-                        )}
-
-                        {firebaseRealTime.sessionState === SessionState.active && (
-                            <Text size="1" color="green">
-                                Live updating
-                            </Text>
-                        )}
-                    </Flex>
+                    <Text size="1">Your time: {localTime.toFormat('HH:mm')}</Text>
                 </HeaderDisplayDates>
             </Header>
 

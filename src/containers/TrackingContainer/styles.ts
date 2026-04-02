@@ -10,13 +10,14 @@ export const TrackingContainerStyled = styled.div`
 `
 
 export const Header = styled.header`
-    padding: 1rem;
+    position: relative;
+    padding: var(--space-4);
     width: 100%;
     display: grid;
     grid-template-columns: 1fr;
     align-items: center;
     justify-content: center;
-    gap: 1rem;
+    gap: var(--space-4);
     color: white;
     background-color: var(--gray-1);
 
@@ -34,7 +35,7 @@ export const HeaderDisplayDates = styled.div`
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 1rem;
+    gap: var(--space-4);
 
     @media (min-width: 770px) {
         flex-direction: column;
@@ -142,4 +143,8 @@ export const MvpSpriteContainer = styled.div`
 export const MvpSprite = styled.img`
     width: auto;
     max-height: 32px;
+`
+
+export const ConnectionStatusContainer = styled.div`
+    position: absolute;
 `
