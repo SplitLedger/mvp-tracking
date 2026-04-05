@@ -228,6 +228,23 @@ const TrackingContainer = (): ReactElement => {
         })
     }, [])
 
+    const fullResetWhenJoining = useCallback(() => {
+        setChangesState([])
+        dispatcher({
+            fullReset: true,
+            mvp: {
+                id: 0,
+                map: '',
+                mobId: '',
+                name: '',
+                protocol: RagnarokMvpProtocol.normal,
+                spawnTime: { minMinutes: 0, maxMinutes: 0 },
+                timeOfDeath: null,
+            },
+            timeOfDeathToUpdate: null,
+        })
+    }, [])
+
     const trackedMvps = mvpsList.filter((mvp) => mvp.timeOfDeath)
 
     const shareTimers = useCallback(() => {
@@ -274,7 +291,7 @@ const TrackingContainer = (): ReactElement => {
     }, [firebaseRealTime])
 
     const onJoinSession = useCallback(
-        (code: string) => firebaseRealTime.connect(code, mvpsListRef.current, resetChangesState),
+        (code: string) => firebaseRealTime.connect(code, mvpsListRef.current, fullResetWhenJoining),
         [firebaseRealTime]
     )
 
@@ -315,7 +332,7 @@ const TrackingContainer = (): ReactElement => {
 
         const savedCode = getRoomCode()
         if (savedCode) {
-            firebaseRealTime.connect(savedCode, mvpsListRef.current, resetChangesState)
+            firebaseRealTime.connect(savedCode, mvpsListRef.current, fullResetWhenJoining)
         }
     }, [])
 
