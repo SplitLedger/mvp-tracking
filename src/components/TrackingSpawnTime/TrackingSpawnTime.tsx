@@ -122,7 +122,7 @@ export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ mvp }): ReactEl
                 <RelativeDateContainer>
                     {timeLabel}
 
-                    <Tooltip content={`${timeLabel} ${minimumDate.toLocaleString(DateTime.DATETIME_MED)}`}>
+                    <Tooltip content={`${timeLabel} ${minimumDate.toLocaleString(DateTime.TIME_24_SIMPLE)}`}>
                         <Strong>{toRelativeAccurate(minimumDate)}</Strong>
                     </Tooltip>
                 </RelativeDateContainer>
@@ -131,7 +131,7 @@ export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ mvp }): ReactEl
             {!mvpDoesNotHaveVariation && variationToStartOrAlreadyStarted && (
                 <RelativeDateContainer>
                     {Number(maximumDifferenceInMinutes) >= 0 ? 'Finished' : 'Finishes'}
-                    <Tooltip content={maximumDate.toLocaleString(DateTime.DATETIME_MED)}>
+                    <Tooltip content={maximumDate.toLocaleString(DateTime.TIME_24_SIMPLE)}>
                         <Strong>{toRelativeAccurate(maximumDate)}</Strong>
                     </Tooltip>
                 </RelativeDateContainer>
