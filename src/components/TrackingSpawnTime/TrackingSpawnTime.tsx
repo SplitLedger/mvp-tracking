@@ -7,6 +7,7 @@ import { computeMvpDifferenceTimers, computeTimeZone } from '@/helpers'
 // self
 import { RelativeDateContainer, TimerContainer } from './styles'
 import { Strong, Tooltip } from '@radix-ui/themes'
+import { defaultDateTimeFormat } from '@/constants.ts'
 
 interface TrackingSpawnTimeProps {
     mvp: RagnarokMvp
@@ -122,7 +123,7 @@ export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ mvp }): ReactEl
                 <RelativeDateContainer>
                     {timeLabel}
 
-                    <Tooltip content={`${timeLabel} ${minimumDate.toLocaleString(DateTime.TIME_24_SIMPLE)}`}>
+                    <Tooltip content={`${timeLabel} ${minimumDate.toFormat(defaultDateTimeFormat)}`}>
                         <Strong>{toRelativeAccurate(minimumDate)}</Strong>
                     </Tooltip>
                 </RelativeDateContainer>
@@ -131,7 +132,7 @@ export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ mvp }): ReactEl
             {!mvpDoesNotHaveVariation && variationToStartOrAlreadyStarted && (
                 <RelativeDateContainer>
                     {Number(maximumDifferenceInMinutes) >= 0 ? 'Finished' : 'Finishes'}
-                    <Tooltip content={maximumDate.toLocaleString(DateTime.TIME_24_SIMPLE)}>
+                    <Tooltip content={maximumDate.toFormat(defaultDateTimeFormat)}>
                         <Strong>{toRelativeAccurate(maximumDate)}</Strong>
                     </Tooltip>
                 </RelativeDateContainer>
