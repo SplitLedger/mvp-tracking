@@ -1,11 +1,12 @@
 'use no memo'
-import { Fragment, memo, type ReactElement, useEffect, useMemo, useState } from 'react'
+import { memo, type ReactElement, useEffect, useMemo, useState } from 'react'
 import { DateTime, Duration } from 'luxon'
 // app
 import type { RagnarokMvp } from '@/containers/TrackingContainer/types'
 import { computeMvpDifferenceTimers, computeTimeZone } from '@/helpers'
 // self
 import { RelativeDateContainer, TimerContainer } from './styles'
+import { Strong, Tooltip } from '@radix-ui/themes'
 
 interface TrackingSpawnTimeProps {
     mvp: RagnarokMvp
@@ -84,6 +85,15 @@ export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ mvp }): ReactEl
         }
     }, [mvp, autoUpdate])
 
+    const mvpDoesNotHaveVariation = mvp.spawnTime.minMinutes === mvp.spawnTime.maxMinutes
+
+    const timeLabel = useMemo(() => {
+        if (mvpDoesNotHaveVariation) {
+            return Number(minimumDifferenceInMinutes) >= 0 ? 'Spawned' : 'Spawns'
+        }
+        return Number(minimumDifferenceInMinutes) >= 0 ? 'Started' : 'Starts'
+    }, [mvpDoesNotHaveVariation, minimumDifferenceInMinutes])
+
     useEffect(() => {
         const intervalId = setInterval(() => setAutoUpdate((current) => current + 1), 1000)
         return () => clearInterval(intervalId)
@@ -97,7 +107,6 @@ export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ mvp }): ReactEl
         )
     }
 
-    const mvpDoesNotHaveVariation = mvp.spawnTime.minMinutes === mvp.spawnTime.maxMinutes
     const variationToStartOrAlreadyStarted = variations.aboutToStart || variations.alreadyStarted
 
     const minimumDate = DateTime.now().setZone(computeTimeZone()).minus({ minutes: minimumDifferenceInMinutes })
@@ -111,20 +120,20 @@ export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ mvp }): ReactEl
         >
             {(mvpDoesNotHaveVariation || !variations.alreadyEnded) && (
                 <RelativeDateContainer>
-                    {mvpDoesNotHaveVariation ? (
-                        <Fragment>{Number(minimumDifferenceInMinutes) >= 0 ? 'Spawned' : 'Spawns'}</Fragment>
-                    ) : (
-                        <Fragment>{Number(minimumDifferenceInMinutes) >= 0 ? 'Started' : 'Starts'}</Fragment>
-                    )}
+                    {timeLabel}
 
-                    <strong>{toRelativeAccurate(minimumDate)}</strong>
+                    <Tooltip content={`${timeLabel} ${minimumDate.toLocaleString(DateTime.DATETIME_MED)}`}>
+                        <Strong>{toRelativeAccurate(minimumDate)}</Strong>
+                    </Tooltip>
                 </RelativeDateContainer>
             )}
 
             {!mvpDoesNotHaveVariation && variationToStartOrAlreadyStarted && (
                 <RelativeDateContainer>
                     {Number(maximumDifferenceInMinutes) >= 0 ? 'Finished' : 'Finishes'}
-                    <strong>{toRelativeAccurate(maximumDate)}</strong>
+                    <Tooltip content={maximumDate.toLocaleString(DateTime.DATETIME_MED)}>
+                        <Strong>{toRelativeAccurate(maximumDate)}</Strong>
+                    </Tooltip>
                 </RelativeDateContainer>
             )}
         </TimerContainer>
