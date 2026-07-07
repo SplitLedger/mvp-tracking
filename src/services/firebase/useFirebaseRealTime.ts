@@ -137,26 +137,30 @@ export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
      * Shift every tracked timeOfDeath forward by how long we were paused,
      * then delete pausedAt → all clients resume and receive updated timers via onChildChanged.
      */
-    const broadcastResume = useCallback((allMvps: RagnarokMvp[]) => {
+    const broadcastResume = useCallback(() => {
         const roomCode = roomCodeRef.current
         if (!roomCode) return
 
         const db = getFirebaseDb()
         const pausedAtRef = ref(db, `rooms/${roomCode}/${firebaseMaintenancePausedAtPath}`)
+        const timersRef = ref(db, `rooms/${roomCode}/timers`)
 
-        get(pausedAtRef).then((snap) => {
-            if (!snap.exists()) return
+        Promise.all([get(pausedAtRef), get(timersRef)]).then(([pausedAtSnap, timersSnap]) => {
+            if (!pausedAtSnap.exists()) return
 
-            const pausedAtISO = snap.val() as string
+            const pausedAtISO = pausedAtSnap.val() as string
             const pausedAtMs = DateTime.fromISO(pausedAtISO, { zone: 'utc' }).toMillis()
             const elapsedMs = DateTime.utc().toMillis() - pausedAtMs
 
-            const updates = allMvps
-                .filter((mvp) => mvp.timeOfDeath !== null)
-                .map((mvp) => {
-                    const shifted = (mvp.timeOfDeath as DateTime).plus(elapsedMs)
-                    return set(ref(db, `rooms/${roomCode}/timers/${mvp.id}`), shifted.toUTC().toISO())
+            const updates: Promise<void>[] = []
+
+            if (timersSnap.exists()) {
+                timersSnap.forEach((child) => {
+                    const timeOfDeathISO = child.val() as string
+                    const shifted = DateTime.fromISO(timeOfDeathISO, { zone: 'utc' }).plus(elapsedMs)
+                    updates.push(set(ref(db, `rooms/${roomCode}/timers/${child.key}`), shifted.toUTC().toISO()))
                 })
+            }
 
             Promise.all(updates).then(() => remove(pausedAtRef))
         })

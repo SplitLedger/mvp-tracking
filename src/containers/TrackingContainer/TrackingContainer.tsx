@@ -342,7 +342,7 @@ const TrackingContainer = (): ReactElement => {
 
     const handleResume = useCallback(() => {
         if (inSession) {
-            firebaseRealTime.broadcastResume(mvpsListRef.current)
+            firebaseRealTime.broadcastResume()
         } else {
             if (!localPausedAt) return
             const elapsedMs = DateTime.utc().toMillis() - DateTime.fromISO(localPausedAt, { zone: 'utc' }).toMillis()
