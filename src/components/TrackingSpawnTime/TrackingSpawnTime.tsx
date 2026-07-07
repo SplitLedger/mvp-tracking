@@ -11,6 +11,8 @@ import { defaultDateTimeFormat } from '@/constants.ts'
 
 interface TrackingSpawnTimeProps {
     mvp: RagnarokMvp
+    /** When provided, the timer is frozen at this point in time (maintenance/pause mode) */
+    frozenAt?: DateTime
 }
 
 type MemoReturn = {
@@ -24,8 +26,8 @@ type MemoReturn = {
     }
 }
 
-const toRelativeAccurate = (target: DateTime): string => {
-    const differenceInMilliseconds = target.toMillis() - DateTime.now().setZone(computeTimeZone()).toMillis()
+const toRelativeAccurate = (target: DateTime, now: DateTime): string => {
+    const differenceInMilliseconds = target.toMillis() - now.toMillis()
     const duration = Duration.fromMillis(Math.abs(differenceInMilliseconds))
         .shiftTo('hours', 'minutes', 'seconds')
         .mapUnits((unit) => Math.floor(unit))
@@ -47,16 +49,14 @@ const toRelativeAccurate = (target: DateTime): string => {
     return isFuture ? `in ${readableDuration}` : `${readableDuration} ago`
 }
 
-export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ mvp }): ReactElement => {
+export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ mvp, frozenAt }): ReactElement => {
     const [autoUpdate, setAutoUpdate] = useState<number>(0)
 
-    const { maximumDifferenceInMinutes, minimumDifferenceInMinutes, variations } = useMemo<MemoReturn>(() => {
-        const dateUTC = DateTime.now().setZone(computeTimeZone())
+    const now = frozenAt ?? DateTime.now().setZone(computeTimeZone())
 
+    const { maximumDifferenceInMinutes, minimumDifferenceInMinutes, variations } = useMemo<MemoReturn>(() => {
         if (!mvp.timeOfDeath) {
             return {
-                maximumSpawnTime: dateUTC,
-                minimalSpawnTime: dateUTC,
                 variations: {
                     aboutToStart: false,
                     alreadyEnded: false,
@@ -66,11 +66,10 @@ export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ mvp }): ReactEl
             }
         }
 
-        const { maximumDifferenceInMinutes, minimumDifferenceInMinutes } = computeMvpDifferenceTimers(mvp)
+        const { maximumDifferenceInMinutes, minimumDifferenceInMinutes } = computeMvpDifferenceTimers(mvp, now)
 
         const variationAlreadyEnded = Number(maximumDifferenceInMinutes) >= 0
         const endedMinutesAgo = Number(maximumDifferenceInMinutes) >= 15
-
         const variationAboutToStart = Number(minimumDifferenceInMinutes) >= -5
         const variationAlreadyStarted = Number(minimumDifferenceInMinutes) >= 0
 
@@ -84,7 +83,7 @@ export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ mvp }): ReactEl
                 endedMinutesAgo,
             },
         }
-    }, [mvp, autoUpdate])
+    }, [mvp, autoUpdate, frozenAt])
 
     const mvpDoesNotHaveVariation = mvp.spawnTime.minMinutes === mvp.spawnTime.maxMinutes
 
@@ -96,9 +95,11 @@ export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ mvp }): ReactEl
     }, [mvpDoesNotHaveVariation, minimumDifferenceInMinutes])
 
     useEffect(() => {
-        const intervalId = setInterval(() => setAutoUpdate((current) => current + 1), 1000)
+        // Do not tick while timers are frozen
+        if (frozenAt) return
+        const intervalId = setInterval(() => setAutoUpdate((c) => c + 1), 1000)
         return () => clearInterval(intervalId)
-    }, [])
+    }, [frozenAt])
 
     if (!mvp.timeOfDeath) {
         return (
@@ -109,9 +110,8 @@ export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ mvp }): ReactEl
     }
 
     const variationToStartOrAlreadyStarted = variations.aboutToStart || variations.alreadyStarted
-
-    const minimumDate = DateTime.now().setZone(computeTimeZone()).minus({ minutes: minimumDifferenceInMinutes })
-    const maximumDate = DateTime.now().setZone(computeTimeZone()).minus({ minutes: maximumDifferenceInMinutes })
+    const minimumDate = now.minus({ minutes: minimumDifferenceInMinutes })
+    const maximumDate = now.minus({ minutes: maximumDifferenceInMinutes })
 
     return (
         <TimerContainer
@@ -122,9 +122,8 @@ export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ mvp }): ReactEl
             {(mvpDoesNotHaveVariation || !variations.alreadyEnded) && (
                 <RelativeDateContainer>
                     {timeLabel}
-
                     <Tooltip content={`${timeLabel} ${minimumDate.toFormat(defaultDateTimeFormat)}`}>
-                        <Strong>{toRelativeAccurate(minimumDate)}</Strong>
+                        <Strong>{toRelativeAccurate(minimumDate, now)}</Strong>
                     </Tooltip>
                 </RelativeDateContainer>
             )}
@@ -133,7 +132,7 @@ export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ mvp }): ReactEl
                 <RelativeDateContainer>
                     {Number(maximumDifferenceInMinutes) >= 0 ? 'Finished' : 'Finishes'}
                     <Tooltip content={maximumDate.toFormat(defaultDateTimeFormat)}>
-                        <Strong>{toRelativeAccurate(maximumDate)}</Strong>
+                        <Strong>{toRelativeAccurate(maximumDate, now)}</Strong>
                     </Tooltip>
                 </RelativeDateContainer>
             )}

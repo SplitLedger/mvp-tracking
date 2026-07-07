@@ -6,6 +6,7 @@ import {
     onChildAdded,
     onChildChanged,
     onChildRemoved,
+    onValue,
     ref,
     remove,
     set,
@@ -15,7 +16,7 @@ import { DateTime } from 'luxon'
 import { Subject } from 'rxjs'
 // app
 import type { RagnarokMvp } from '@/containers/TrackingContainer/types'
-import { localStorageRoomCodeKey } from '@/constants'
+import { firebaseMaintenancePausedAtPath, localStorageRoomCodeKey } from '@/constants'
 // self
 import { SessionState, type TimerUpdate, type UseFirebaseRealTimeReturn } from './types'
 
@@ -44,6 +45,8 @@ const buildTimersPayload = (mvps: RagnarokMvp[]): Record<string, string> => {
 
 export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
     const [sessionState, setSessionState] = useState<SessionState>(SessionState.idle)
+    const [pausedAt, setPausedAt] = useState<string | null>(null)
+
     const roomCodeRef = useRef<string | null>(null)
     const onTimerUpdate$ = useRef(new Subject<TimerUpdate>()).current
     const unsubscribers = useRef<Unsubscribe[]>([])
@@ -54,19 +57,25 @@ export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
         roomCodeRef.current = null
         localStorage.removeItem(localStorageRoomCodeKey)
         setSessionState(SessionState.idle)
+        setPausedAt(null)
     }, [])
 
     const subscribeToRoom = useCallback(
         (roomCode: string) => {
             const db = getFirebaseDb()
             const timersRef = ref(db, `rooms/${roomCode}/timers`)
+            const pausedAtRef = ref(db, `rooms/${roomCode}/${firebaseMaintenancePausedAtPath}`)
 
             const emit = (id: number, timeOfDeath: string | null) => onTimerUpdate$.next({ id, timeOfDeath })
 
             unsubscribers.current.push(
                 onChildAdded(timersRef, (snap) => emit(Number(snap.key), snap.val() as string)),
                 onChildChanged(timersRef, (snap) => emit(Number(snap.key), snap.val() as string)),
-                onChildRemoved(timersRef, (snap) => emit(Number(snap.key), null))
+                onChildRemoved(timersRef, (snap) => emit(Number(snap.key), null)),
+                // All clients react to pause/resume in real time
+                onValue(pausedAtRef, (snap) => {
+                    setPausedAt(snap.exists() ? (snap.val() as string) : null)
+                })
             )
         },
         [onTimerUpdate$]
@@ -74,12 +83,8 @@ export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
 
     const connect = useCallback(
         async (roomCode: string, localMvps: RagnarokMvp[], onRoomExists?: () => void): Promise<void> => {
-            // Avoid double-connecting
-            if (roomCodeRef.current === roomCode) {
-                return
-            }
+            if (roomCodeRef.current === roomCode) return
 
-            // Tear down any previous session without clearing localStorage yet
             unsubscribers.current.forEach((unsub) => unsub())
             unsubscribers.current = []
 
@@ -91,17 +96,14 @@ export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
             const snap = await get(ref(db, `rooms/${roomCode}/timers`))
 
             if (!snap.exists()) {
-                // Room does not exist — create it and push local timers
                 const payload = buildTimersPayload(localMvps)
                 if (Object.keys(payload).length > 0) {
                     await set(ref(db, `rooms/${roomCode}/timers`), payload)
                 }
             } else {
-                // Room exists — DB is the source of truth, wipe local state first
                 onRoomExists?.()
             }
 
-            // Room exists — Firebase is the source of truth, subscribe and receive
             subscribeToRoom(roomCode)
             setSessionState(SessionState.active)
         },
@@ -122,7 +124,44 @@ export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
         }
     }, [])
 
-    // Cleanup subscriptions on unmount
+    /** Write pausedAt = now → all clients will freeze their timers */
+    const broadcastPause = useCallback(() => {
+        const roomCode = roomCodeRef.current
+        if (!roomCode) return
+
+        const db = getFirebaseDb()
+        set(ref(db, `rooms/${roomCode}/${firebaseMaintenancePausedAtPath}`), DateTime.utc().toISO())
+    }, [])
+
+    /**
+     * Shift every tracked timeOfDeath forward by how long we were paused,
+     * then delete pausedAt → all clients resume and receive updated timers via onChildChanged.
+     */
+    const broadcastResume = useCallback((allMvps: RagnarokMvp[]) => {
+        const roomCode = roomCodeRef.current
+        if (!roomCode) return
+
+        const db = getFirebaseDb()
+        const pausedAtRef = ref(db, `rooms/${roomCode}/${firebaseMaintenancePausedAtPath}`)
+
+        get(pausedAtRef).then((snap) => {
+            if (!snap.exists()) return
+
+            const pausedAtISO = snap.val() as string
+            const pausedAtMs = DateTime.fromISO(pausedAtISO, { zone: 'utc' }).toMillis()
+            const elapsedMs = DateTime.utc().toMillis() - pausedAtMs
+
+            const updates = allMvps
+                .filter((mvp) => mvp.timeOfDeath !== null)
+                .map((mvp) => {
+                    const shifted = (mvp.timeOfDeath as DateTime).plus(elapsedMs)
+                    return set(ref(db, `rooms/${roomCode}/timers/${mvp.id}`), shifted.toUTC().toISO())
+                })
+
+            Promise.all(updates).then(() => remove(pausedAtRef))
+        })
+    }, [])
+
     useEffect(
         () => () => {
             unsubscribers.current.forEach((unsub) => unsub())
@@ -133,9 +172,12 @@ export const useFirebaseRealTime = (): UseFirebaseRealTimeReturn => {
     return {
         sessionState,
         roomCode: roomCodeRef.current,
+        pausedAt,
         connect,
         leaveSession: cleanup,
         broadcastUpdate,
+        broadcastPause,
+        broadcastResume,
         onTimerUpdate$,
     }
 }

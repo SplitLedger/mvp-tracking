@@ -5,3 +5,7 @@ export const localStorageRoomCodeKey = 'mvps.ragnarok.roomCode'
 export const defaultTimeZone = 'UTC'
 
 export const defaultDateTimeFormat = 'dd/MM/yyyy HH:mm'
+
+// pause - resume maintenance
+export const localStoragePausedAtKey = 'mvps.ragnarok.pausedAt'
+export const firebaseMaintenancePausedAtPath = 'maintenance/pausedAt'

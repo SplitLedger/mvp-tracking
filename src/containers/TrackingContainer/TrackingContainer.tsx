@@ -24,6 +24,8 @@ import {
     HamburgerMenuIcon,
     MagnifyingGlassIcon,
     MoonIcon,
+    PauseIcon,
+    PlayIcon,
     PlusIcon,
     ResetIcon,
     Share1Icon,
@@ -47,7 +49,7 @@ import {
     UpdateFromTombForm,
 } from '@/components'
 import { computeTimeZone, computeTrackingInitialState, sortTrackingMvpList } from '@/helpers'
-import { defaultDateTimeFormat, localStorageMvpsKey } from '@/constants'
+import { defaultDateTimeFormat, localStorageMvpsKey, localStoragePausedAtKey } from '@/constants'
 import { getRoomCode, SessionState, useFirebaseRealTime } from '@/services/firebase'
 // self
 import {
@@ -113,14 +115,23 @@ const TrackingContainer = (): ReactElement => {
     const [importDialog, setImportDialog] = useState(false)
     const [joinSessionDialog, setJoinSessionDialog] = useState(false)
 
-    // Keep a stable ref to mvpsList for use inside callbacks and effects
+    // Local pause state — used when not in a live session
+    const [localPausedAt, setLocalPausedAt] = useState<string | null>(() =>
+        localStorage.getItem(localStoragePausedAtKey)
+    )
+
     const mvpsListRef = useRef(mvpsList)
     useEffect(() => {
         mvpsListRef.current = mvpsList
     }, [mvpsList])
 
+    // Firebase wins when in a session; fall back to local state otherwise
+    const inSession = firebaseRealTime.sessionState !== SessionState.idle
+    const pausedAtISO = inSession ? firebaseRealTime.pausedAt : localPausedAt
+    const frozenAt = pausedAtISO ? DateTime.fromISO(pausedAtISO).setZone(computeTimeZone()) : undefined
+
     const isShareable = useMemo(
-        () => ['.rot.splitledger.pro', 'localhost'].some((hostname) => location.hostname.includes(hostname)),
+        () => ['gowkuandfriends.com', 'localhost'].some((hostname) => location.hostname.includes(hostname)),
         []
     )
 
@@ -318,6 +329,33 @@ const TrackingContainer = (): ReactElement => {
         return { color: 'green', feedback: 'Connected. Receiving and sending real time updates' }
     }, [firebaseRealTime.sessionState])
 
+    const handlePause = useCallback(() => {
+        if (inSession) {
+            firebaseRealTime.broadcastPause()
+        } else {
+            const iso = DateTime.utc().toISO()
+            localStorage.setItem(localStoragePausedAtKey, iso)
+            setLocalPausedAt(iso)
+        }
+        toast.info('Server maintenance started — timers are paused')
+    }, [inSession, firebaseRealTime])
+
+    const handleResume = useCallback(() => {
+        if (inSession) {
+            firebaseRealTime.broadcastResume(mvpsListRef.current)
+        } else {
+            if (!localPausedAt) return
+            const elapsedMs = DateTime.utc().toMillis() - DateTime.fromISO(localPausedAt, { zone: 'utc' }).toMillis()
+            for (const mvp of mvpsListRef.current) {
+                if (!mvp.timeOfDeath) continue
+                dispatcher({ mvp, timeOfDeathToUpdate: mvp.timeOfDeath.plus(elapsedMs) })
+            }
+            localStorage.removeItem(localStoragePausedAtKey)
+            setLocalPausedAt(null)
+        }
+        toast.success('Server maintenance ended — timers resumed')
+    }, [inSession, firebaseRealTime, localPausedAt])
+
     // Search debounce
     useEffect(() => {
         const subscription = searchSubject.pipe(debounceTime(300)).subscribe(setSearchMvp)
@@ -440,6 +478,16 @@ const TrackingContainer = (): ReactElement => {
                             </DropdownMenu.Item>
 
                             <DropdownMenu.Separator />
+                            {!frozenAt ? (
+                                <DropdownMenu.Item onClick={handlePause}>
+                                    <PauseIcon /> Pause timers (maintenance)
+                                </DropdownMenu.Item>
+                            ) : (
+                                <DropdownMenu.Item onClick={handleResume}>
+                                    <PlayIcon /> Resume timers
+                                </DropdownMenu.Item>
+                            )}
+                            <DropdownMenu.Separator />
 
                             <DropdownMenu.Item asChild>
                                 <a href="https://github.com/recs182/mvp-tracking/issues" target="_blank">
@@ -497,6 +545,17 @@ const TrackingContainer = (): ReactElement => {
                             </Tooltip>
                         </Fragment>
                     )}
+
+                    {frozenAt && (
+                        <Fragment>
+                            <Separator orientation="vertical" />
+                            <Tooltip content="Server maintenance — timers are paused. Click to resume.">
+                                <Button color="orange" size="1" variant="ghost" type="button" onClick={handleResume}>
+                                    <PauseIcon /> Maintenance
+                                </Button>
+                            </Tooltip>
+                        </Fragment>
+                    )}
                 </Flex>
 
                 <HeaderDisplayDates>
@@ -529,7 +588,6 @@ const TrackingContainer = (): ReactElement => {
 
                 {searchFilteredMvps.sort(sortTrackingMvpList).map((mvp) => {
                     const { id, map, mobId, name, spawnTime, sprite, timeOfDeath } = mvp
-
                     const spriteToUse = sprite ?? 'fallback.png'
                     const trackingChange = changesState
                         .slice(0, 1)
@@ -565,7 +623,6 @@ const TrackingContainer = (): ReactElement => {
                                             </Tooltip>
                                         </Fragment>
                                     )}
-
                                     {Boolean(trackingChange) && (
                                         <Tooltip content="Undo">
                                             <Button
@@ -578,7 +635,7 @@ const TrackingContainer = (): ReactElement => {
                                         </Tooltip>
                                     )}
                                 </Flex>
-                                <TrackingSpawnTime mvp={mvp} />
+                                <TrackingSpawnTime mvp={mvp} frozenAt={frozenAt} />
                             </TrackerGridCell>
                             <TrackerGridCell>
                                 <UpdateContainer>
