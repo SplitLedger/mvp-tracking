@@ -616,7 +616,8 @@ const TrackingContainer = (): ReactElement => {
                         .slice(0, 1)
                         .find((history) => history.mvp.id === mvp.id && !history.action.startsWith('UNDO'))
 
-                    const shouldNotify = notificationSelectedMvpIds.includes(mvp.id)
+                    const shouldNotify =
+                        notificationSelectedMvpIds.includes(mvp.id) && Notification?.permission === 'granted'
 
                     return (
                         <TrackerGridRow key={`tracking-row-${id}`}>
@@ -625,7 +626,13 @@ const TrackingContainer = (): ReactElement => {
                                     <MvpSpriteContainer>
                                         <MvpSprite src={`./mvps/${spriteToUse}`} alt={`${name} sprite`} />
                                     </MvpSpriteContainer>
-                                    <MvpInformation map={map} mobId={mobId} name={name} spawnTime={spawnTime} />
+                                    <MvpInformation
+                                        map={map}
+                                        mobId={mobId}
+                                        name={name}
+                                        shouldNotify={shouldNotify}
+                                        spawnTime={spawnTime}
+                                    />
                                 </MvpInformationContainer>
                             </TrackerGridCell>
                             <TrackerGridCell>

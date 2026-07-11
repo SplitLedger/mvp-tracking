@@ -52,9 +52,7 @@ const toRelativeAccurate = (target: DateTime, now: DateTime): string => {
 
 export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ frozenAt, mvp, shouldNotify }): ReactElement => {
     const notifiedRef = useRef(false)
-
     const [autoUpdate, setAutoUpdate] = useState<number>(0)
-    const [notificationPermission] = useState<NotificationPermission>(Notification?.permission ?? 'default')
 
     const now = frozenAt ?? DateTime.now().setZone(computeTimeZone())
 
@@ -116,16 +114,13 @@ export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ frozenAt, mvp, 
             }
 
             notifiedRef.current = true
+            const notification = new Notification(`${mvp.name} spawns in 2 minutes!`, {
+                body: `Map: ${mvp.map}`,
+                tag: `mvp-notify-${mvp.id}`, // prevents duplicates if re-rendered
+                icon: `./mvps/${mvp.sprite ?? 'fallback.png'}`,
+            })
 
-            if (notificationPermission === 'granted') {
-                const notification = new Notification(`${mvp.name} spawns in 2 minutes!`, {
-                    body: `Map: ${mvp.map}`,
-                    tag: `mvp-notify-${mvp.id}`, // prevents duplicates if re-rendered
-                    icon: `./mvps/${mvp.sprite ?? 'fallback.png'}`,
-                })
-
-                setTimeout(() => notification.close(), 120_000)
-            }
+            setTimeout(() => notification.close(), 120_000)
         }
 
         // Reset so next spawn cycle can notify again
