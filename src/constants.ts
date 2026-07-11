@@ -1,6 +1,7 @@
 export const localStorageMvpsKey = 'mvps.ragnarok.state'
 export const localStorageTimeZoneKey = 'mvps.ragnarok.timezone'
 export const localStorageRoomCodeKey = 'mvps.ragnarok.roomCode'
+export const localStorageNotificationMvpIdsKey = 'mvps.ragnarok.notificationMvpIds'
 
 export const defaultTimeZone = 'UTC'
 

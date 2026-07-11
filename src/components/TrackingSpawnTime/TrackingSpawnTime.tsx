@@ -1,5 +1,5 @@
 'use no memo'
-import { memo, type ReactElement, useEffect, useMemo, useState } from 'react'
+import { memo, type ReactElement, useEffect, useMemo, useRef, useState } from 'react'
 import { DateTime, Duration } from 'luxon'
 // app
 import type { RagnarokMvp } from '@/containers/TrackingContainer/types'
@@ -10,9 +10,10 @@ import { Strong, Tooltip } from '@radix-ui/themes'
 import { defaultDateTimeFormat } from '@/constants.ts'
 
 interface TrackingSpawnTimeProps {
-    mvp: RagnarokMvp
     /** When provided, the timer is frozen at this point in time (maintenance/pause mode) */
     frozenAt?: DateTime
+    mvp: RagnarokMvp
+    shouldNotify: boolean
 }
 
 type MemoReturn = {
@@ -49,8 +50,11 @@ const toRelativeAccurate = (target: DateTime, now: DateTime): string => {
     return isFuture ? `in ${readableDuration}` : `${readableDuration} ago`
 }
 
-export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ mvp, frozenAt }): ReactElement => {
+export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ frozenAt, mvp, shouldNotify }): ReactElement => {
+    const notifiedRef = useRef(false)
+
     const [autoUpdate, setAutoUpdate] = useState<number>(0)
+    const [notificationPermission] = useState<NotificationPermission>(Notification?.permission ?? 'default')
 
     const now = frozenAt ?? DateTime.now().setZone(computeTimeZone())
 
@@ -96,10 +100,39 @@ export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ mvp, frozenAt }
 
     useEffect(() => {
         // Do not tick while timers are frozen
-        if (frozenAt) return
-        const intervalId = setInterval(() => setAutoUpdate((c) => c + 1), 1000)
+        if (frozenAt) {
+            return
+        }
+
+        const intervalId = setInterval(() => setAutoUpdate((current) => current + 1), 1000)
+
         return () => clearInterval(intervalId)
     }, [frozenAt])
+
+    useEffect(() => {
+        if (!frozenAt && shouldNotify && Math.floor(minimumDifferenceInMinutes || 0) === -2) {
+            if (notifiedRef.current) {
+                return
+            }
+
+            notifiedRef.current = true
+
+            if (notificationPermission === 'granted') {
+                const notification = new Notification(`${mvp.name} spawns in 2 minutes!`, {
+                    body: `Map: ${mvp.map}`,
+                    tag: `mvp-notify-${mvp.id}`, // prevents duplicates if re-rendered
+                    icon: `./mvps/${mvp.sprite ?? 'fallback.png'}`,
+                })
+
+                setTimeout(() => notification.close(), 120_000)
+            }
+        }
+
+        // Reset so next spawn cycle can notify again
+        if (minimumDifferenceInMinutes !== null && Number(minimumDifferenceInMinutes) >= 0) {
+            notifiedRef.current = false
+        }
+    }, [minimumDifferenceInMinutes])
 
     if (!mvp.timeOfDeath) {
         return (
@@ -108,9 +141,9 @@ export const TrackingSpawnTime = memo<TrackingSpawnTimeProps>(({ mvp, frozenAt }
             </TimerContainer>
         )
     }
-
     const variationToStartOrAlreadyStarted = variations.aboutToStart || variations.alreadyStarted
     const minimumDate = now.minus({ minutes: minimumDifferenceInMinutes })
+
     const maximumDate = now.minus({ minutes: maximumDifferenceInMinutes })
 
     return (

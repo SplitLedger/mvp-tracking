@@ -31,15 +31,13 @@ export const Header = styled.header`
 `
 
 export const HeaderDisplayDates = styled.div`
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-4);
+    display: none;
 
     @media (min-width: 770px) {
+        display: flex;
         flex-direction: column;
         align-items: flex-end;
+        justify-content: center;
         gap: 0;
     }
 `

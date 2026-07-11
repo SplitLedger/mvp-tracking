@@ -10,14 +10,8 @@ export const computeTrackingInitialState: ComputeTrackingInitialState = () => {
     const jsonState = localStorage.getItem(localStorageMvpsKey)
     try {
         const parsedState = JSON.parse(jsonState as string)
-        const retroState = Array.isArray(parsedState)
-            ? parsedState.reduce((merge, mvp) => {
-                  return mvp.timeOfDeath ? { ...merge, [mvp.id]: mvp.timeOfDeath } : merge
-              }, {})
-            : parsedState
-
         return mvpsFromStatic.map((mvp) => {
-            const timeOfDeath = retroState[mvp.id]
+            const timeOfDeath = parsedState[mvp.id]
             return {
                 ...mvp,
                 timeOfDeath: timeOfDeath ? DateTime.fromISO(timeOfDeath).setZone(computeTimeZone()) : null,

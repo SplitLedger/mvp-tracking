@@ -2,25 +2,24 @@ import { Fragment, type ReactElement, useCallback, useEffect, useMemo, useReduce
 import { DateTime } from 'luxon'
 import { debounceTime, Subject } from 'rxjs'
 import {
-    Box,
     Button,
     DropdownMenu,
     Flex,
     IconButton,
-    Popover,
     Separator,
     Spinner,
+    Strong,
     Text,
     TextField,
     Tooltip,
 } from '@radix-ui/themes'
 import {
+    BellIcon,
     Cross1Icon,
     DownloadIcon,
     EnterIcon,
     ExclamationTriangleIcon,
     ExternalLinkIcon,
-    GlobeIcon,
     HamburgerMenuIcon,
     MagnifyingGlassIcon,
     MoonIcon,
@@ -29,7 +28,6 @@ import {
     PlusIcon,
     ResetIcon,
     Share1Icon,
-    StarFilledIcon,
     TargetIcon,
     TimerIcon,
     UpdateIcon,
@@ -43,12 +41,18 @@ import {
     ImportDialog,
     JoinSessionDialog,
     MvpInformation,
+    NotificationsDialog,
     ResetDialog,
     TimeZoneDialog,
     TrackingSpawnTime,
     UpdateFromTombForm,
 } from '@/components'
-import { computeTimeZone, computeTrackingInitialState, sortTrackingMvpList } from '@/helpers'
+import {
+    computeNotificationIdsInitialState,
+    computeTimeZone,
+    computeTrackingInitialState,
+    sortTrackingMvpList,
+} from '@/helpers'
 import { defaultDateTimeFormat, localStorageMvpsKey, localStoragePausedAtKey } from '@/constants'
 import { getRoomCode, SessionState, useFirebaseRealTime } from '@/services/firebase'
 // self
@@ -114,6 +118,11 @@ const TrackingContainer = (): ReactElement => {
     const [serverTimeDialog, setServerTimeDialog] = useState(false)
     const [importDialog, setImportDialog] = useState(false)
     const [joinSessionDialog, setJoinSessionDialog] = useState(false)
+
+    const [notificationsDialog, setNotificationsDialog] = useState(false)
+    const [notificationSelectedMvpIds, setNotificationSelectedMvpIds] = useState<number[]>(
+        computeNotificationIdsInitialState()
+    )
 
     // Local pause state — used when not in a live session
     const [localPausedAt, setLocalPausedAt] = useState<string | null>(() =>
@@ -390,11 +399,13 @@ const TrackingContainer = (): ReactElement => {
         return () => sub.unsubscribe()
     }, [firebaseRealTime.onTimerUpdate$])
 
-    const searchFilteredMvps = mvpsList.filter(
-        (mvp) =>
-            mvp.name.toLowerCase().includes(searchMvp.toLowerCase()) ||
-            mvp.map.toLowerCase().includes(searchMvp.toLowerCase())
-    )
+    const searchFilteredMvps = useMemo(() => {
+        return mvpsList.filter(
+            (mvp) =>
+                mvp.name.toLowerCase().includes(searchMvp.toLowerCase()) ||
+                mvp.map.toLowerCase().includes(searchMvp.toLowerCase())
+        )
+    }, [searchMvp, mvpsList])
 
     const serverTime = DateTime.now().setZone(computeTimeZone())
     const localTime = DateTime.now()
@@ -420,6 +431,13 @@ const TrackingContainer = (): ReactElement => {
             />
 
             <JoinSessionDialog onJoin={onJoinSession} onOpenChange={setJoinSessionDialog} open={joinSessionDialog} />
+
+            <NotificationsDialog
+                onOpenChange={setNotificationsDialog}
+                open={notificationsDialog}
+                selectedMvpIds={notificationSelectedMvpIds}
+                setSelectedMvpIds={setNotificationSelectedMvpIds}
+            />
 
             <Header>
                 <Flex gap="2" align="center">
@@ -463,10 +481,15 @@ const TrackingContainer = (): ReactElement => {
                                 <UpdateIcon /> Session update history
                             </DropdownMenu.Item>
                             <DropdownMenu.Separator />
-                            <DropdownMenu.Item onClick={() => setServerTimeDialog(true)}>
-                                <GlobeIcon /> Server time
+
+                            <DropdownMenu.Item onClick={() => setNotificationsDialog(true)}>
+                                <BellIcon /> Notifications
                             </DropdownMenu.Item>
+                            {/*<DropdownMenu.Item onClick={() => setServerTimeDialog(true)}>*/}
+                            {/*    <GlobeIcon /> Server time*/}
+                            {/*</DropdownMenu.Item>*/}
                             <DropdownMenu.Separator />
+
                             <DropdownMenu.Item
                                 disabled={!trackedMvps.length}
                                 onClick={!trackedMvps.length ? undefined : shareTimers}
@@ -501,23 +524,23 @@ const TrackingContainer = (): ReactElement => {
                         </DropdownMenu.Content>
                     </DropdownMenu.Root>
 
-                    <Popover.Root>
-                        <Popover.Trigger>
-                            <Button>
-                                <StarFilledIcon />
-                                <Box display={{ initial: 'none', sm: 'inline' }}> Donate</Box>
-                            </Button>
-                        </Popover.Trigger>
-                        <Popover.Content style={{ backgroundColor: '#f7f7f7' }}>
-                            <iframe
-                                id="kofiframe"
-                                src="https://ko-fi.com/woodlie/?hidefeed=true&widget=true&embed=true&preview=true"
-                                style={{ border: 'none', width: '100%', background: 'transparent' }}
-                                height="712"
-                                title="woodlie"
-                            />
-                        </Popover.Content>
-                    </Popover.Root>
+                    {/*<Popover.Root>*/}
+                    {/*    <Popover.Trigger>*/}
+                    {/*        <Button>*/}
+                    {/*            <StarFilledIcon />*/}
+                    {/*            <Box display={{ initial: 'none', sm: 'inline' }}> Donate</Box>*/}
+                    {/*        </Button>*/}
+                    {/*    </Popover.Trigger>*/}
+                    {/*    <Popover.Content style={{ backgroundColor: '#f7f7f7' }}>*/}
+                    {/*        <iframe*/}
+                    {/*            id="kofiframe"*/}
+                    {/*            src="https://ko-fi.com/woodlie/?hidefeed=true&widget=true&embed=true&preview=true"*/}
+                    {/*            style={{ border: 'none', width: '100%', background: 'transparent' }}*/}
+                    {/*            height="712"*/}
+                    {/*            title="woodlie"*/}
+                    {/*        />*/}
+                    {/*    </Popover.Content>*/}
+                    {/*</Popover.Root>*/}
 
                     <Separator orientation="vertical" />
 
@@ -593,6 +616,8 @@ const TrackingContainer = (): ReactElement => {
                         .slice(0, 1)
                         .find((history) => history.mvp.id === mvp.id && !history.action.startsWith('UNDO'))
 
+                    const shouldNotify = notificationSelectedMvpIds.includes(mvp.id)
+
                     return (
                         <TrackerGridRow key={`tracking-row-${id}`}>
                             <TrackerGridCell>
@@ -635,7 +660,8 @@ const TrackingContainer = (): ReactElement => {
                                         </Tooltip>
                                     )}
                                 </Flex>
-                                <TrackingSpawnTime mvp={mvp} frozenAt={frozenAt} />
+
+                                <TrackingSpawnTime frozenAt={frozenAt} mvp={mvp} shouldNotify={shouldNotify} />
                             </TrackerGridCell>
                             <TrackerGridCell>
                                 <UpdateContainer>
@@ -655,7 +681,7 @@ const TrackingContainer = (): ReactElement => {
                         <TrackerGridCell>
                             <Flex direction="column" width="100%" align="center" gap="1">
                                 <Flex gap="1">
-                                    Nothing found when searching for <strong>{searchMvp}</strong>
+                                    Nothing found when searching for <Strong>{searchMvp}</Strong>
                                 </Flex>
                                 <Flex>
                                     <img src={`./hmm.gif`} alt="hmmmm" />
