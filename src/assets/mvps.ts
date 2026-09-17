@@ -1165,4 +1165,13 @@ export default [
         mobId: '1302',
         protocol: RagnarokMvpProtocol.miniBoss,
     },
+    {
+        id: 2165,
+        name: 'Queen Scaraba',
+        map: 'dic_dun02',
+        spawnTime: { minMinutes: 120, maxMinutes: 120 },
+        sprite: '2165.png',
+        mobId: '2165',
+        protocol: RagnarokMvpProtocol.boss,
+    },
 ] as RagnarokMvp[]
